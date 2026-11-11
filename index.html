@@ -25,33 +25,82 @@
         h1 {
             text-align: center;
             color: #2c3e50;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
-        .upload-section {
-            margin-bottom: 20px;
+        /* 파일 관리 창 스타일 */
+        .file-manager-section {
+            margin-bottom: 25px;
             padding: 20px;
             background-color: #eef2f5;
             border-radius: 8px;
-            text-align: center;
+            border: 1px solid #dcdde1;
         }
-        input[type="file"] {
+        .file-manager-title {
             font-size: 16px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
+        .file-upload-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .file-list-box {
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 10px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 10px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 14px;
+        }
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        .btn-file-del {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn-file-del:hover {
+            background-color: #c0392b;
+        }
+
+        /* 검색 영역 스타일 (가로 배치 복원) */
         .search-section {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) auto;
-            gap: 15px;
+            display: flex;
+            gap: 12px;
             margin-bottom: 20px;
             align-items: flex-end;
             background-color: #fcfcfc;
             padding: 20px;
             border: 1px solid #eee;
             border-radius: 8px;
+            flex-wrap: wrap;
         }
         .filter-group {
             display: flex;
             flex-direction: column;
             gap: 5px;
+            flex: 1;
+            min-width: 150px;
         }
         .filter-group label {
             font-size: 13px;
@@ -62,7 +111,7 @@
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 6px;
-            font-size: 15px;
+            font-size: 14px;
             width: 100%;
             box-sizing: border-box;
             background-color: #fff;
@@ -78,10 +127,10 @@
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: bold;
             transition: background-color 0.3s;
-            height: 42px;
+            height: 41px;
         }
         .btn-search:hover {
             background-color: #2980b9;
@@ -93,14 +142,16 @@
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: bold;
             transition: background-color 0.3s;
-            height: 42px;
+            height: 41px;
         }
         .btn-reset:hover {
             background-color: #7f8c8d;
         }
+
+        /* 테이블 스타일 */
         .table-container {
             overflow-x: auto;
             border-radius: 8px;
@@ -129,15 +180,11 @@
         }
         .empty-message {
             text-align: center;
-            padding: 20px;
+            padding: 25px;
             color: #7f8c8d;
         }
-        .text-center {
-            text-align: center;
-        }
-        .text-right {
-            text-align: right;
-        }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
     </style>
 </head>
 <body>
@@ -145,12 +192,22 @@
 <div class="container">
     <h1>주사침 생산현황 통합 검색</h1>
     
-    <div class="upload-section">
-        <label for="excelFile"><strong>생산현황 엑셀 파일 업로드 (.xlsx) : </strong></label>
-        <input type="file" id="excelFile" accept=".xlsx, .xls">
+    <!-- 파일 관리 창 (저장 및 삭제 기능) -->
+    <div class="file-manager-section">
+        <div class="file-manager-title">
+            <span>📁 생산현황 파일 관리 창 (업로드 파일 저장 및 삭제)</span>
+            <span id="fileCountBadge" style="font-size: 13px; color: #666;">저장된 파일: 0개</span>
+        </div>
+        <div class="file-upload-row">
+            <input type="file" id="excelFile" accept=".xlsx, .xls" style="font-size: 15px;">
+            <span style="font-size: 13px; color: #e67e22;">* 파일을 선택하면 자동으로 저장되어 데이터에 합산됩니다.</span>
+        </div>
+        <div class="file-list-box" id="fileListBox">
+            <div style="color: #888; font-size: 13px; text-align: center; padding: 10px;">저장된 엑셀 파일이 없습니다. 파일을 업로드해 주세요.</div>
+        </div>
     </div>
 
-    <!-- 소분류(드롭다운) 연동 검색 영역 -->
+    <!-- 검색 영역 (가로 한 줄 배치) -->
     <div class="search-section">
         <div class="filter-group">
             <label>생산일자</label>
@@ -207,7 +264,7 @@
             </thead>
             <tbody>
                 <tr>
-                    <td colspan="6" class="empty-message">엑셀 파일을 업로드하면 이곳에 분리된 표가 정리됩니다.</td>
+                    <td colspan="6" class="empty-message">엑셀 파일을 업로드하거나 저장된 파일을 불러와 주세요.</td>
                 </tr>
             </tbody>
         </table>
@@ -215,7 +272,21 @@
 </div>
 
 <script>
-    let globalData = []; 
+    let globalData = [];     // 모든 파일에서 추출한 통합 데이터
+    let savedFiles = [];     // 저장된 파일 정보 목록 (name, base64 등)
+
+    // 페이지 로드 시 로컬 스토리지에서 저장된 파일 불러오기
+    window.onload = function() {
+        const stored = localStorage.getItem('savedExcelFiles');
+        if (stored) {
+            try {
+                savedFiles = JSON.parse(stored);
+                processAllSavedFiles();
+            } catch(e) {
+                savedFiles = [];
+            }
+        }
+    };
 
     function excelDateToJSDate(serial) {
         if (!isNaN(serial) && serial > 30000) {
@@ -233,124 +304,182 @@
         return str;
     }
 
+    // 파일 선택 시 저장소에 추가
     document.getElementById('excelFile').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = function(e) {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {type: 'array', cellDates: true});
+        reader.onload = function(uploadEvent) {
+            const buffer = uploadEvent.target.result;
             
-            const firstSheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[firstSheetName];
-            const rawData = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ""});
+            // 이미 동일한 이름의 파일이 있으면 교체, 없으면 추가
+            savedFiles = savedFiles.filter(f => f.name !== file.name);
+            savedFiles.push({
+                name: file.name,
+                data: Array.from(new Uint8Array(buffer)) // ArrayBuffer를 배열로 변환하여 저장
+            });
+
+            localStorage.setItem('savedExcelFiles', JSON.stringify(savedFiles));
+            processAllSavedFiles();
             
-            globalData = [];
-            let currentProdDate = ""; 
-            let colIdx = { product: -1, process: -1, qty: -1, remark: -1 };
+            // 파일 input 초기화 (같은 파일 재선택 가능하게)
+            e.target.value = '';
+        };
+        reader.readAsArrayBuffer(file);
+    });
 
-            for (let i = 0; i < rawData.length; i++) {
-                let row = rawData[i].map(cell => String(cell).trim());
+    // 저장된 파일 목록 삭제
+    function removeFile(fileName) {
+        savedFiles = savedFiles.filter(f => f.name !== fileName);
+        localStorage.setItem('savedExcelFiles', JSON.stringify(savedFiles));
+        processAllSavedFiles();
+    }
 
-                if (row.includes("생산일자")) {
-                    let dIdx = row.indexOf("생산일자");
-                    if (i + 1 < rawData.length) {
-                        let rawDateVal = rawData[i+1][dIdx];
-                        if (rawDateVal !== undefined && rawDateVal !== "") {
-                            if (rawDateVal instanceof Date) {
-                                let year = rawDateVal.getFullYear();
-                                let month = String(rawDateVal.getMonth() + 1).padStart(2, '0');
-                                let day = String(rawDateVal.getDate()).padStart(2, '0');
-                                currentProdDate = `${year}-${month}-${day}`;
-                            } else {
-                                currentProdDate = excelDateToJSDate(rawDateVal);
+    // 저장된 모든 파일을 읽어 하나의 데이터로 통합 및 중복 제거
+    function processAllSavedFiles() {
+        globalData = [];
+        let rawCombined = [];
+
+        savedFiles.forEach(fileObj => {
+            try {
+                const uint8Arr = new Uint8Array(fileObj.data);
+                const workbook = XLSX.read(uint8Arr, {type: 'array', cellDates: true});
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const rawData = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ""});
+                
+                let currentProdDate = ""; 
+                let colIdx = { product: -1, process: -1, qty: -1, remark: -1 };
+
+                for (let i = 0; i < rawData.length; i++) {
+                    let row = rawData[i].map(cell => String(cell).trim());
+
+                    if (row.includes("생산일자")) {
+                        let dIdx = row.indexOf("생산일자");
+                        if (i + 1 < rawData.length) {
+                            let rawDateVal = rawData[i+1][dIdx];
+                            if (rawDateVal !== undefined && rawDateVal !== "") {
+                                if (rawDateVal instanceof Date) {
+                                    currentProdDate = `${rawDateVal.getFullYear()}-${String(rawDateVal.getMonth() + 1).padStart(2, '0')}-${String(rawDateVal.getDate()).padStart(2, '0')}`;
+                                } else {
+                                    currentProdDate = excelDateToJSDate(rawDateVal);
+                                }
                             }
                         }
                     }
-                }
 
-                if (row.includes("제품명") && row.includes("공정")) {
-                    colIdx.product = row.indexOf("제품명");
-                    colIdx.process = row.indexOf("공정");
-                    colIdx.qty = row.indexOf("생산수량");
-                    colIdx.remark = row.indexOf("비고");
-                    
-                    for (let j = i + 1; j < rawData.length; j++) {
-                        let dataRow = rawData[j];
-                        let pName = String(dataRow[colIdx.product] || "").trim();
+                    if (row.includes("제품명") && row.includes("공정")) {
+                        colIdx.product = row.indexOf("제품명");
+                        colIdx.process = row.indexOf("공정");
+                        colIdx.qty = row.indexOf("생산수량");
+                        colIdx.remark = row.indexOf("비고");
                         
-                        if (!pName || pName === "제품명" || pName.includes("업무보고")) {
-                            if (pName.includes("생산 일일 업무보고")) {
-                                for (let d = j; d < Math.min(j + 3, rawData.length); d++) {
-                                    for (let c = 0; c < rawData[d].length; c++) {
-                                        let val = rawData[d][c];
-                                        if (val !== undefined && val !== "") {
-                                            let sVal = String(val);
-                                            if (sVal.includes("2026-") || sVal.includes("2025-") || !isNaN(val) && Number(val) > 40000) {
-                                                if (val instanceof Date) {
-                                                    currentProdDate = `${val.getFullYear()}-${String(val.getMonth()+1).padStart(2,'0')}-${String(val.getDate()).padStart(2,'0')}`;
-                                                } else {
-                                                    currentProdDate = excelDateToJSDate(val);
+                        for (let j = i + 1; j < rawData.length; j++) {
+                            let dataRow = rawData[j];
+                            let pName = String(dataRow[colIdx.product] || "").trim();
+                            
+                            if (!pName || pName === "제품명" || pName.includes("업무보고")) {
+                                if (pName.includes("생산 일일 업무보고")) {
+                                    for (let d = j; d < Math.min(j + 3, rawData.length); d++) {
+                                        for (let c = 0; c < rawData[d].length; c++) {
+                                            let val = rawData[d][c];
+                                            if (val !== undefined && val !== "") {
+                                                let sVal = String(val);
+                                                if (sVal.includes("2026-") || sVal.includes("2025-") || !isNaN(val) && Number(val) > 40000) {
+                                                    if (val instanceof Date) {
+                                                        currentProdDate = `${val.getFullYear()}-${String(val.getMonth()+1).padStart(2,'0')}-${String(val.getDate()).padStart(2,'0')}`;
+                                                    } else {
+                                                        currentProdDate = excelDateToJSDate(val);
+                                                    }
                                                 }
                                             }
                                         }
                                     }
                                 }
+                                continue;
                             }
-                            continue;
-                        }
 
-                        if (pName === "특이사항") continue;
+                            if (pName === "특이사항") continue;
 
-                        let rawProcessStr = String(dataRow[colIdx.process] || "").trim();
-                        let qty = String(dataRow[colIdx.qty] || "").trim();
-                        let remark = String(dataRow[colIdx.remark] || "").trim();
+                            let rawProcessStr = String(dataRow[colIdx.process] || "").trim();
+                            let qty = String(dataRow[colIdx.qty] || "").trim();
+                            let remark = String(dataRow[colIdx.remark] || "").trim();
 
-                        let cleanProcess = rawProcessStr;
-                        let extractedLot = "";
+                            let cleanProcess = rawProcessStr;
+                            let extractedLot = "";
 
-                        let lotMatch = rawProcessStr.match(/\((?:로트\s*[:]?)\s*([^)]+)\)/i);
-                        if (lotMatch) {
-                            extractedLot = lotMatch[1].trim();
-                            cleanProcess = rawProcessStr.replace(lotMatch[0], "").trim();
-                        } else {
-                            let parts = rawProcessStr.split(/로트[:\s]*/);
-                            if (parts.length > 1) {
-                                cleanProcess = parts[0].trim();
-                                extractedLot = parts[1].replace(/[()]/g, "").trim();
+                            let lotMatch = rawProcessStr.match(/\((?:로트\s*[:]?)\s*([^)]+)\)/i);
+                            if (lotMatch) {
+                                extractedLot = lotMatch[1].trim();
+                                cleanProcess = rawProcessStr.replace(lotMatch[0], "").trim();
+                            } else {
+                                let parts = rawProcessStr.split(/로트[:\s]*/);
+                                if (parts.length > 1) {
+                                    cleanProcess = parts[0].trim();
+                                    extractedLot = parts[1].replace(/[()]/g, "").trim();
+                                }
                             }
-                        }
 
-                        let formattedQty = qty;
-                        let cleanNum = Number(String(qty).replace(/[^0-9.-]+/g,""));
-                        if (!isNaN(cleanNum) && qty !== "") {
-                            formattedQty = cleanNum.toLocaleString();
-                        }
+                            let formattedQty = qty;
+                            let cleanNum = Number(String(qty).replace(/[^0-9.-]+/g,""));
+                            if (!isNaN(cleanNum) && qty !== "") {
+                                formattedQty = cleanNum.toLocaleString();
+                            }
 
-                        globalData.push({
-                            "생산일자": currentProdDate || "-",
-                            "제품명": pName,
-                            "공정": cleanProcess || rawProcessStr,
-                            "로트": extractedLot || "-",
-                            "생산수량": formattedQty,
-                            "비고": remark
-                        });
+                            rawCombined.push({
+                                "생산일자": currentProdDate || "-",
+                                "제품명": pName,
+                                "공정": cleanProcess || rawProcessStr,
+                                "로트": extractedLot || "-",
+                                "생산수량": formattedQty,
+                                "비고": remark
+                            });
+                        }
                     }
                 }
+            } catch(err) {
+                console.error("파일 읽기 오류:", fileObj.name);
             }
+        });
 
-            if (globalData.length > 0) {
-                updateDropdownOptions();
-                renderTable(globalData);
-            } else {
-                alert("엑셀에서 데이터를 추출하지 못했습니다. 파일 구조를 확인해주세요.");
-            }
-        };
-        reader.readAsArrayBuffer(file);
-    });
+        // ★ 중복 데이터 제거 (완전히 동일한 행은 1개만 남김)
+        let uniqueMap = new Map();
+        rawCombined.forEach(item => {
+            let key = `${item['생산일자']}_${item['제품명']}_${item['공정']}_${item['로트']}_${item['생산수량']}_${item['비고']}`;
+            uniqueMap.set(key, item);
+        });
+        globalData = Array.from(uniqueMap.values());
 
-    // 선택된 조건에 맞춰 상호 연동되는 드롭다운 옵션 업데이트 함수
+        updateFileListUI();
+        updateDropdownOptions();
+        renderTable(globalData);
+    }
+
+    // 파일 관리 창 UI 업데이트
+    function updateFileListUI() {
+        const listBox = document.getElementById('fileListBox');
+        const badge = document.getElementById('fileCountBadge');
+        badge.textContent = `저장된 파일: ${savedFiles.length}개`;
+
+        if (savedFiles.length === 0) {
+            listBox.innerHTML = '<div style="color: #888; font-size: 13px; text-align: center; padding: 10px;">저장된 엑셀 파일이 없습니다. 파일을 업로드해 주세요.</div>';
+            return;
+        }
+
+        listBox.innerHTML = '';
+        savedFiles.forEach(f => {
+            let item = document.createElement('div');
+            item.className = 'file-item';
+            item.innerHTML = `
+                <span>📄 <strong>${f.name}</strong></span>
+                <button class="btn-file-del" onclick="removeFile('${f.name}')">삭제</button>
+            `;
+            listBox.appendChild(item);
+        });
+    }
+
+    // 상호 연동되는 드롭다운 옵션 업데이트 함수
     function updateDropdownOptions() {
         if (globalData.length === 0) return;
 
@@ -366,7 +495,6 @@
         const curLot = selLot.value;
         const curRem = selRemark.value;
 
-        // 현재 선택된 조건을 제외하고 필터링된 부분집합 추출
         let filterForDropdown = (targetField) => {
             return globalData.filter(row => {
                 if (targetField !== '생산일자' && curDate && row['생산일자'] !== curDate) return false;
@@ -378,14 +506,12 @@
             });
         };
 
-        // 각 드롭다운의 고유값 추출
         let dates = [...new Set(filterForDropdown('생산일자').map(r => r['생산일자']))].filter(v => v && v !== '-');
         let products = [...new Set(filterForDropdown('제품명').map(r => r['제품명']))].filter(v => v);
         let processes = [...new Set(filterForDropdown('공정').map(r => r['공정']))].filter(v => v);
         let lots = [...new Set(filterForDropdown('로트').map(r => r['로트']))].filter(v => v && v !== '-');
         let remarks = [...new Set(filterForDropdown('비고').map(r => r['비고']))].filter(v => v);
 
-        // 드롭다운 HTML 갱신 함수 (선택 유지)
         let updateSelectHtml = (element, list, defaultText, currentValue) => {
             element.innerHTML = `<option value="">${defaultText}</option>`;
             list.sort().forEach(item => {
@@ -401,7 +527,7 @@
         updateSelectHtml(selRemark, remarks, '전체 상태', curRem);
     }
 
-    // [검색] 버튼 클릭 시 최종 테이블에 반영하는 함수
+    // [검색] 버튼 클릭 시
     function filterData() {
         if (globalData.length === 0) return;
 
@@ -411,7 +537,7 @@
         const sLot = document.getElementById('searchLot').value;
         const sRemark = document.getElementById('searchRemark').value;
 
-        const filtered = globalData.filter(row => {
+        const filtered = globalData.format ? globalData : globalData.filter(row => {
             return (sDate === "" || row['생산일자'] === sDate) &&
                    (sProduct === "" || row['제품명'] === sProduct) &&
                    (sProcess === "" || row['공정'] === sProcess) &&
