@@ -27,49 +27,85 @@
             color: #2c3e50;
             margin-bottom: 25px;
         }
-        /* 파일 관리 창 스타일 */
-        .file-manager-section {
-            margin-bottom: 25px;
-            padding: 20px;
+        
+        /* 상단 파일 관리 버튼 영역 */
+        .top-file-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
             background-color: #eef2f5;
+            padding: 15px 20px;
             border-radius: 8px;
             border: 1px solid #dcdde1;
         }
-        .file-manager-title {
-            font-size: 16px;
+        .btn-open-modal {
+            background-color: #2c3e50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .btn-open-modal:hover {
+            background-color: #1a252f;
+        }
+
+        /* 모달 팝업 창 스타일 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fff;
+            width: 550px;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        .modal-header {
+            font-size: 18px;
             font-weight: bold;
             color: #2c3e50;
-            margin-bottom: 12px;
+            margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .file-upload-row {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
+        .btn-close-modal {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #7f8c8d;
         }
         .file-list-box {
-            background: #fff;
+            background: #f8fafc;
             border: 1px solid #cbd5e1;
             border-radius: 6px;
             padding: 10px;
-            max-height: 120px;
+            max-height: 200px;
             overflow-y: auto;
+            margin-top: 15px;
         }
         .file-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 6px 10px;
-            border-bottom: 1px solid #f1f5f9;
+            padding: 8px 10px;
+            border-bottom: 1px solid #e2e8f0;
             font-size: 14px;
         }
-        .file-item:last-child {
-            border-bottom: none;
-        }
+        .file-item:last-child { border-bottom: none; }
         .btn-file-del {
             background-color: #e74c3c;
             color: white;
@@ -79,11 +115,9 @@
             cursor: pointer;
             font-size: 12px;
         }
-        .btn-file-del:hover {
-            background-color: #c0392b;
-        }
+        .btn-file-del:hover { background-color: #c0392b; }
 
-        /* 검색 영역 스타일 (가로 배치 복원) */
+        /* 검색 영역 스타일 (가로 한 줄 배치) */
         .search-section {
             display: flex;
             gap: 12px;
@@ -132,9 +166,7 @@
             transition: background-color 0.3s;
             height: 41px;
         }
-        .btn-search:hover {
-            background-color: #2980b9;
-        }
+        .btn-search:hover { background-color: #2980b9; }
         .btn-reset {
             padding: 10px 18px;
             background-color: #95a5a6;
@@ -147,16 +179,14 @@
             transition: background-color 0.3s;
             height: 41px;
         }
-        .btn-reset:hover {
-            background-color: #7f8c8d;
-        }
+        .btn-reset:hover { background-color: #7f8c8d; }
 
-        /* 테이블 스타일 */
+        /* 테이블 및 합계 스타일 */
         .table-container {
             overflow-x: auto;
             border-radius: 8px;
             border: 1px solid #ddd;
-            max-height: 600px;
+            max-height: 550px;
         }
         table {
             width: 100%;
@@ -175,9 +205,7 @@
             top: 0;
             z-index: 10;
         }
-        tr:hover {
-            background-color: #f1f6f9;
-        }
+        tr:hover { background-color: #f1f6f9; }
         .empty-message {
             text-align: center;
             padding: 25px;
@@ -185,6 +213,25 @@
         }
         .text-center { text-align: center; }
         .text-right { text-align: right; }
+
+        /* 합계 강조 바 스타일 */
+        .summary-bar {
+            margin-top: 15px;
+            background-color: #e8f8f5;
+            border: 1px solid #a3e4d7;
+            padding: 15px 20px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #117a65;
+        }
+        .summary-value {
+            font-size: 20px;
+            color: #0e6251;
+        }
     </style>
 </head>
 <body>
@@ -192,18 +239,31 @@
 <div class="container">
     <h1>주사침 생산현황 통합 검색</h1>
     
-    <!-- 파일 관리 창 (저장 및 삭제 기능) -->
-    <div class="file-manager-section">
-        <div class="file-manager-title">
-            <span>📁 생산현황 파일 관리 창 (업로드 파일 저장 및 삭제)</span>
-            <span id="fileCountBadge" style="font-size: 13px; color: #666;">저장된 파일: 0개</span>
+    <!-- 상단 파일 관리 바 (메인 화면 지저분함 방지) -->
+    <div class="top-file-bar">
+        <div>
+            <strong>📁 생산현황 파일 관리</strong>
+            <span id="fileCountBadge" style="margin-left: 10px; font-size: 14px; color: #555;">저장된 파일: 0개</span>
         </div>
-        <div class="file-upload-row">
-            <input type="file" id="excelFile" accept=".xlsx, .xls" style="font-size: 15px;">
-            <span style="font-size: 13px; color: #e67e22;">* 파일을 선택하면 자동으로 저장되어 데이터에 합산됩니다.</span>
-        </div>
-        <div class="file-list-box" id="fileListBox">
-            <div style="color: #888; font-size: 13px; text-align: center; padding: 10px;">저장된 엑셀 파일이 없습니다. 파일을 업로드해 주세요.</div>
+        <button class="btn-open-modal" onclick="openFileManager()">파일 관리 및 추가 창 열기</button>
+    </div>
+
+    <!-- 파일 관리 모달 팝업 창 -->
+    <div class="modal-overlay" id="fileModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>파일 업로드 및 삭제 관리</span>
+                <button class="btn-close-modal" onclick="closeFileManager()">&times;</button>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label for="excelFile" style="display:block; margin-bottom:8px; font-weight:bold; font-size:14px;">엑셀 파일 추가 (.xlsx, .xls)</label>
+                <input type="file" id="excelFile" accept=".xlsx, .xls" style="font-size: 14px; width: 100%;">
+            </div>
+            <div style="font-size: 13px; color: #e67e22; margin-bottom: 10px;">* 파일을 선택하면 자동 저장되어 전체 데이터에 합산됩니다.</div>
+            <div style="font-weight: bold; font-size: 14px; margin-top: 15px;">저장된 파일 목록:</div>
+            <div class="file-list-box" id="fileListBox">
+                <div style="color: #888; font-size: 13px; text-align: center; padding: 10px;">저장된 파일이 없습니다.</div>
+            </div>
         </div>
     </div>
 
@@ -264,18 +324,23 @@
             </thead>
             <tbody>
                 <tr>
-                    <td colspan="6" class="empty-message">엑셀 파일을 업로드하거나 저장된 파일을 불러와 주세요.</td>
+                    <td colspan="6" class="empty-message">상단에서 파일 관리 창을 열어 엑셀 파일을 업로드해 주세요.</td>
                 </tr>
             </tbody>
         </table>
     </div>
+
+    <!-- 생산수량 합계 표시 바 -->
+    <div class="summary-bar">
+        <span>🔍 검색된 조건의 생산수량 총합</span>
+        <span class="summary-value" id="totalQtySum">0 EA</span>
+    </div>
 </div>
 
 <script>
-    let globalData = [];     // 모든 파일에서 추출한 통합 데이터
-    let savedFiles = [];     // 저장된 파일 정보 목록 (name, base64 등)
+    let globalData = [];     
+    let savedFiles = [];     
 
-    // 페이지 로드 시 로컬 스토리지에서 저장된 파일 불러오기
     window.onload = function() {
         const stored = localStorage.getItem('savedExcelFiles');
         if (stored) {
@@ -287,6 +352,14 @@
             }
         }
     };
+
+    function openFileManager() {
+        document.getElementById('fileModal').style.display = 'flex';
+    }
+
+    function closeFileManager() {
+        document.getElementById('fileModal').style.display = 'none';
+    }
 
     function excelDateToJSDate(serial) {
         if (!isNaN(serial) && serial > 30000) {
@@ -304,7 +377,6 @@
         return str;
     }
 
-    // 파일 선택 시 저장소에 추가
     document.getElementById('excelFile').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -313,30 +385,25 @@
         reader.onload = function(uploadEvent) {
             const buffer = uploadEvent.target.result;
             
-            // 이미 동일한 이름의 파일이 있으면 교체, 없으면 추가
             savedFiles = savedFiles.filter(f => f.name !== file.name);
             savedFiles.push({
                 name: file.name,
-                data: Array.from(new Uint8Array(buffer)) // ArrayBuffer를 배열로 변환하여 저장
+                data: Array.from(new Uint8Array(buffer))
             });
 
             localStorage.setItem('savedExcelFiles', JSON.stringify(savedFiles));
             processAllSavedFiles();
-            
-            // 파일 input 초기화 (같은 파일 재선택 가능하게)
             e.target.value = '';
         };
         reader.readAsArrayBuffer(file);
     });
 
-    // 저장된 파일 목록 삭제
     function removeFile(fileName) {
         savedFiles = savedFiles.filter(f => f.name !== fileName);
         localStorage.setItem('savedExcelFiles', JSON.stringify(savedFiles));
         processAllSavedFiles();
     }
 
-    // 저장된 모든 파일을 읽어 하나의 데이터로 통합 및 중복 제거
     function processAllSavedFiles() {
         globalData = [];
         let rawCombined = [];
@@ -421,18 +488,15 @@
                                 }
                             }
 
-                            let formattedQty = qty;
                             let cleanNum = Number(String(qty).replace(/[^0-9.-]+/g,""));
-                            if (!isNaN(cleanNum) && qty !== "") {
-                                formattedQty = cleanNum.toLocaleString();
-                            }
+                            let numericQty = !isNaN(cleanNum) ? cleanNum : 0;
 
                             rawCombined.push({
                                 "생산일자": currentProdDate || "-",
                                 "제품명": pName,
                                 "공정": cleanProcess || rawProcessStr,
                                 "로트": extractedLot || "-",
-                                "생산수량": formattedQty,
+                                "생산수량": numericQty,
                                 "비고": remark
                             });
                         }
@@ -443,7 +507,7 @@
             }
         });
 
-        // ★ 중복 데이터 제거 (완전히 동일한 행은 1개만 남김)
+        // 중복 데이터 제거
         let uniqueMap = new Map();
         rawCombined.forEach(item => {
             let key = `${item['생산일자']}_${item['제품명']}_${item['공정']}_${item['로트']}_${item['생산수량']}_${item['비고']}`;
@@ -456,14 +520,13 @@
         renderTable(globalData);
     }
 
-    // 파일 관리 창 UI 업데이트
     function updateFileListUI() {
         const listBox = document.getElementById('fileListBox');
         const badge = document.getElementById('fileCountBadge');
         badge.textContent = `저장된 파일: ${savedFiles.length}개`;
 
         if (savedFiles.length === 0) {
-            listBox.innerHTML = '<div style="color: #888; font-size: 13px; text-align: center; padding: 10px;">저장된 엑셀 파일이 없습니다. 파일을 업로드해 주세요.</div>';
+            listBox.innerHTML = '<div style="color: #888; font-size: 13px; text-align: center; padding: 10px;">저장된 파일이 없습니다.</div>';
             return;
         }
 
@@ -479,7 +542,6 @@
         });
     }
 
-    // 상호 연동되는 드롭다운 옵션 업데이트 함수
     function updateDropdownOptions() {
         if (globalData.length === 0) return;
 
@@ -527,7 +589,6 @@
         updateSelectHtml(selRemark, remarks, '전체 상태', curRem);
     }
 
-    // [검색] 버튼 클릭 시
     function filterData() {
         if (globalData.length === 0) return;
 
@@ -537,7 +598,7 @@
         const sLot = document.getElementById('searchLot').value;
         const sRemark = document.getElementById('searchRemark').value;
 
-        const filtered = globalData.format ? globalData : globalData.filter(row => {
+        const filtered = globalData.filter(row => {
             return (sDate === "" || row['생산일자'] === sDate) &&
                    (sProduct === "" || row['제품명'] === sProduct) &&
                    (sProcess === "" || row['공정'] === sProcess) &&
@@ -548,7 +609,6 @@
         renderTable(filtered);
     }
 
-    // [초기화] 버튼
     function resetSearch() {
         document.getElementById('searchDate').value = "";
         document.getElementById('searchProduct').value = "";
@@ -559,28 +619,36 @@
         renderTable(globalData);
     }
 
-    // 테이블 렌더링
     function renderTable(data) {
         const tbody = document.querySelector('#dataTable tbody');
         tbody.innerHTML = '';
 
+        let sumQty = 0;
+
         if (data.length === 0) {
             tbody.innerHTML = '<tr><td colspan="6" class="empty-message">조건에 맞는 데이터가 없습니다.</td></tr>';
+            document.getElementById('totalQtySum').textContent = '0 EA';
             return;
         }
 
         data.forEach(row => {
+            sumQty += row['생산수량'];
+            let formattedQty = row['생산수량'].toLocaleString();
+
             let tr = document.createElement('tr');
             tr.innerHTML = `
                 <td class="text-center">${row['생산일자']}</td>
                 <td><strong>${row['제품명']}</strong></td>
                 <td>${row['공정']}</td>
                 <td><span style="background:#eef2f5; padding:3px 8px; border-radius:4px; font-family:monospace;">${row['로트']}</span></td>
-                <td class="text-right"><strong>${row['생산수량']}</strong></td>
+                <td class="text-right"><strong>${formattedQty}</strong></td>
                 <td>${row['비고']}</td>
             `;
             tbody.appendChild(tr);
         });
+
+        // 합계 표시 업데이트
+        document.getElementById('totalQtySum').textContent = sumQty.toLocaleString() + ' EA';
     }
 </script>
 </body>
