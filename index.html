@@ -239,7 +239,7 @@
 <div class="container">
     <h1>주사침 생산현황 통합 검색</h1>
     
-    <!-- 상단 파일 관리 바 (메인 화면 지저분함 방지) -->
+    <!-- 상단 파일 관리 바 -->
     <div class="top-file-bar">
         <div>
             <strong>📁 생산현황 파일 관리</strong>
@@ -574,9 +574,16 @@
         let lots = [...new Set(filterForDropdown('로트').map(r => r['로트']))].filter(v => v && v !== '-');
         let remarks = [...new Set(filterForDropdown('비고').map(r => r['비고']))].filter(v => v);
 
+        // ★ 핵심 수정: 생산일자는 최신순(내림차순, reverse)으로 정렬, 나머지는 가나다순 정렬
+        dates.sort().reverse();
+        products.sort();
+        processes.sort();
+        lots.sort();
+        remarks.sort();
+
         let updateSelectHtml = (element, list, defaultText, currentValue) => {
             element.innerHTML = `<option value="">${defaultText}</option>`;
-            list.sort().forEach(item => {
+            list.forEach(item => {
                 let selected = (item === currentValue) ? 'selected' : '';
                 element.innerHTML += `<option value="${item}" ${selected}>${item}</option>`;
             });
@@ -647,7 +654,6 @@
             tbody.appendChild(tr);
         });
 
-        // 합계 표시 업데이트
         document.getElementById('totalQtySum').textContent = sumQty.toLocaleString() + ' EA';
     }
 </script>
