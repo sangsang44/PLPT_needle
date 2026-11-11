@@ -2,31 +2,54 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>주사침 생산현황 검색</title>
-  <!-- 엑셀 파일을 읽어오기 위한 외부 도구 (SheetJS) -->
+  <title>주사침 생산현황 검색 대시보드</title>
+  <!-- 엑셀 데이터를 처리하는 외부 라이브러리 (SheetJS) -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <style>
     body { font-family: 'Malgun Gothic', sans-serif; background-color: #f4f6f9; margin: 0; }
     .header { background-color: #2c3e50; color: white; padding: 20px; font-size: 20px; font-weight: bold; }
     .container { padding: 20px; max-width: 1200px; margin: auto; }
-    .search-input { width: 100%; padding: 15px; font-size: 16px; border: 2px solid #3498db; border-radius: 8px; margin-bottom: 20px; box-sizing: border-box; }
+    
+    /* 검색 및 파일 첨부 영역 */
+    .controls { display: flex; gap: 10px; margin-bottom: 20px; }
+    .search-input { flex: 1; padding: 15px; font-size: 16px; border: 2px solid #3498db; border-radius: 8px; box-sizing: border-box; outline: none; }
+    .search-input:focus { border-color: #2980b9; }
+    
+    /* 엑셀 추가 버튼 디자인 */
+    .file-upload-btn { background-color: #3498db; color: white; border: none; padding: 15px 25px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; min-width: 180px; transition: background 0.2s; }
+    .file-upload-btn:hover { background-color: #2980b9; }
+    input[type="file"] { display: none; }
+    
+    /* 표 디자인 */
     table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
     th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
     th { background-color: #3498db; color: white; font-size: 15px; }
     tr:hover { background-color: #f1f8ff; }
-    .loading { text-align: center; padding: 20px; color: #888; }
+    .empty-state { text-align: center; padding: 40px; color: #888; font-size: 15px; line-height: 1.6; }
+    
+    /* 상태 뱃지 (완료/진행중) 디자인 */
+    .badge { padding: 5px 10px; border-radius: 12px; font-size: 13px; font-weight: bold; display: inline-block; }
+    .badge-done { background-color: #e8f8f5; color: #1abc9c; border: 1px solid #1abc9c; }
+    .badge-ing { background-color: #fef9e7; color: #f39c12; border: 1px solid #f39c12; }
   </style>
 </head>
 <body>
   <div class="header">
-    💉 주사침 생산현황 검색 대시보드
+    💉 주사침 생산현황 통합 검색 대시보드
   </div>
   
   <div class="container">
-    <!-- 검색창 -->
-    <input type="text" id="searchInput" class="search-input" placeholder="제품명, 로트번호, 공정 등을 검색하세요 (예: 3E-20, 264211)">
+    <div class="controls">
+      <!-- 검색창 -->
+      <input type="text" id="searchInput" class="search-input" placeholder="제품명, 로트번호, 완료 상태 등을 검색하세요 (예: 3E-20, 264211, 완료)">
+      
+      <!-- 엑셀 데이터 추가 버튼 -->
+      <label class="file-upload-btn">
+        📂 엑셀 데이터 추가
+        <input type="file" id="excelUpload" accept=".xlsx, .xls, .csv" multiple>
+      </label>
+    </div>
     
-    <!-- 데이터 표 -->
     <table id="dataTable">
       <thead>
         <tr>
@@ -35,43 +58,68 @@
           <th>생산수량</th>
           <th>불량수량</th>
           <th>불량률</th>
-          <th>비고</th>
+          <th>비고 (상태)</th>
         </tr>
       </thead>
       <tbody>
-        <tr><td colspan="6" class="loading">엑셀 데이터를 불러오는 중입니다...</td></tr>
+        <!-- 초기 안내 문구 -->
+        <tr>
+          <td colspan="6" class="empty-state">
+            오른쪽 위의 <b>'엑셀 데이터 추가'</b> 버튼을 눌러 생산일일보고 파일을 올려주세요.<br>
+            (여러 날짜의 파일을 동시에 선택할 수 있으며, 기존 데이터 아래에 계속 누적됩니다.)
+          </td>
+        </tr>
       </tbody>
     </table>
   </div>
 
   <script>
-    // 1. 깃허브에 함께 올라간 엑셀 파일 이름 지정 (띄어쓰기 주의)
-    const EXCEL_FILE_NAME = './생산일일보고_주사침팀 261110.xlsx';
+    const tbody = document.querySelector('#dataTable tbody');
+    let isFirstLoad = true;
 
-    // 2. 엑셀 데이터 불러오기 함수
-    async function loadExcelData() {
-      try {
-        const response = await fetch(EXCEL_FILE_NAME);
-        const arrayBuffer = await response.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, {type: 'array'});
+    // 1. 엑셀 파일 첨부 및 데이터 누적 기능
+    document.getElementById('excelUpload').addEventListener('change', async function(e) {
+      const files = e.target.files;
+      if (files.length === 0) return;
+
+      // 처음 파일을 올릴 때 안내 문구 삭제
+      if (isFirstLoad) {
+        tbody.innerHTML = ''; 
+        isFirstLoad = false;
+      }
+
+      // 선택한 모든 파일을 순서대로 읽어서 표 아래에 계속 추가
+      for (let file of files) {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data, {type: 'array'});
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        // 엑셀 데이터를 배열 형태로 가져오기
         const rawData = XLSX.utils.sheet_to_json(worksheet, {header: 1});
 
-        const tbody = document.querySelector('#dataTable tbody');
         let html = '';
-
+        
         // 엑셀 표에서 실제 데이터가 시작되는 4번째 줄(인덱스 3)부터 반복
         for(let i = 3; i < rawData.length; i++) {
           const row = rawData[i];
-          if(!row || !row[1]) continue; // 빈 줄 건너뛰기
+          if(!row || !row[1]) continue; // 제품명이 없는 빈 줄은 건너뛰기
 
           const productName = row[1] || '';
           const process = row[4] || '';
           const prodQty = row[8] || 0;
           const defectQty = row[9] || 0;
+          
           let defectRate = row[11] || 0;
           if(typeof defectRate === 'number') defectRate = (defectRate * 100).toFixed(2) + '%';
-          const note = row[12] || '';
+          
+          let note = row[12] || '';
+          let badgeHtml = note;
+          
+          // 비고란 내용에 따라 뱃지(완료/중간과정) 색상 변경
+          if (note.includes('완료')) {
+            badgeHtml = `<span class="badge badge-done">${note}</span>`;
+          } else if (note.includes('중간') || note.includes('진행')) {
+            badgeHtml = `<span class="badge badge-ing">${note}</span>`;
+          }
 
           html += `
             <tr>
@@ -80,28 +128,31 @@
               <td>${prodQty.toLocaleString()}</td>
               <td>${defectQty.toLocaleString()}</td>
               <td>${defectRate}</td>
-              <td>${note}</td>
+              <td>${badgeHtml}</td>
             </tr>
           `;
         }
-        tbody.innerHTML = html;
-      } catch (error) {
-        document.querySelector('#dataTable tbody').innerHTML = `<tr><td colspan="6" style="color:red; text-align:center;">데이터를 불러오지 못했습니다. 엑셀 파일 이름('${EXCEL_FILE_NAME}')이 깃허브에 올라간 이름과 똑같은지 확인해주세요.</td></tr>`;
+        // 기존 데이터 아래에 새로운 엑셀 데이터 이어붙이기
+        tbody.innerHTML += html;
       }
-    }
+      // 파일 선택창 초기화 (같은 파일을 다시 올릴 수 있도록)
+      this.value = ''; 
+    });
 
-    // 3. 검색 기능 구현
+    // 2. 통합 검색 기능 (로트, 제품명, 상태 모두 검색 가능)
     document.getElementById('searchInput').addEventListener('keyup', function() {
       const term = this.value.toLowerCase();
       const rows = document.querySelectorAll('#dataTable tbody tr');
+      
       rows.forEach(row => {
+        // 표의 내용이 없는 안내 문구 줄은 검색에서 제외
+        if(row.querySelector('.empty-state')) return;
+        
+        // 각 줄의 모든 텍스트를 가져와서 검색어가 포함되어 있는지 확인
         const text = row.textContent.toLowerCase();
         row.style.display = text.includes(term) ? '' : 'none';
       });
     });
-
-    // 시작할 때 데이터 불러오기 실행
-    loadExcelData();
   </script>
 </body>
 </html>
