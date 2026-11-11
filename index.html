@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>주사침 생산현황 검색</title>
+    <title>주사침 생산현황 통합 검색 대시보드</title>
     <!-- 엑셀 파일을 읽기 위한 라이브러리 (SheetJS) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
@@ -15,7 +15,7 @@
             color: #333;
         }
         .container {
-            max-width: 1200px;
+            max-width: 1350px;
             margin: 0 auto;
             background-color: #fff;
             padding: 30px;
@@ -38,23 +38,38 @@
             font-size: 16px;
         }
         .search-section {
-            display: flex;
-            gap: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) 100px;
+            gap: 15px;
             margin-bottom: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
+            align-items: flex-end;
+            background-color: #fcfcfc;
+            padding: 20px;
+            border: 1px solid #eee;
+            border-radius: 8px;
         }
-        .search-section input {
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .filter-group label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #555;
+        }
+        .search-section select {
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 6px;
             font-size: 15px;
-            flex: 1;
-            min-width: 150px;
+            width: 100%;
+            box-sizing: border-box;
+            background-color: #fff;
         }
-        .search-section button {
-            padding: 10px 20px;
-            background-color: #3498db;
+        .btn-reset {
+            padding: 10px 15px;
+            background-color: #95a5a6;
             color: white;
             border: none;
             border-radius: 6px;
@@ -62,14 +77,16 @@
             font-size: 15px;
             font-weight: bold;
             transition: background-color 0.3s;
+            height: 42px;
         }
-        .search-section button:hover {
-            background-color: #2980b9;
+        .btn-reset:hover {
+            background-color: #7f8c8d;
         }
         .table-container {
             overflow-x: auto;
             border-radius: 8px;
             border: 1px solid #ddd;
+            max-height: 600px;
         }
         table {
             width: 100%;
@@ -86,43 +103,87 @@
             color: white;
             position: sticky;
             top: 0;
+            z-index: 10;
         }
         tr:hover {
-            background-color: #f5f5f5;
+            background-color: #f1f6f9;
         }
         .empty-message {
             text-align: center;
             padding: 20px;
             color: #7f8c8d;
         }
+        .row-special {
+            background-color: #fff3cd !important;
+            font-weight: bold;
+            color: #856404;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .text-right {
+            text-align: right;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>주사침 생산현황 검색</h1>
+    <h1>주사침 생산현황 통합 검색</h1>
     
     <div class="upload-section">
         <label for="excelFile"><strong>생산현황 엑셀 파일 업로드 (.xlsx) : </strong></label>
         <input type="file" id="excelFile" accept=".xlsx, .xls">
     </div>
 
+    <!-- 소분류(드롭다운) 검색 영역 -->
     <div class="search-section">
-        <input type="text" id="searchProduct" placeholder="제품명 검색">
-        <input type="text" id="searchLot" placeholder="로트 검색">
-        <input type="text" id="searchProcess" placeholder="공정 검색">
-        <input type="text" id="searchQuantity" placeholder="생산수량 검색">
-        <button onclick="filterData()">검색하기</button>
+        <div class="filter-group">
+            <label>제품명 (소분류)</label>
+            <select id="searchProduct" onchange="filterData()">
+                <option value="">전체 제품명</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label>공정명 (소분류)</label>
+            <select id="searchProcess" onchange="filterData()">
+                <option value="">전체 공정</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label>로트 번호 (소분류)</label>
+            <select id="searchLot" onchange="filterData()">
+                <option value="">전체 로트</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label>비고/상태 (소분류)</label>
+            <select id="searchRemark" onchange="filterData()">
+                <option value="">전체 상태</option>
+            </select>
+        </div>
+
+        <button class="btn-reset" onclick="resetSearch()">초기화</button>
     </div>
 
     <div class="table-container">
         <table id="dataTable">
             <thead>
-                <!-- 헤더가 여기에 생성됩니다 -->
+                <tr>
+                    <th>생산일자</th>
+                    <th>제품명</th>
+                    <th>공정</th>
+                    <th>로트</th>
+                    <th class="text-right">생산수량</th>
+                    <th>비고</th>
+                </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td colspan="100%" class="empty-message">엑셀 파일을 업로드하면 데이터가 표시됩니다.</td>
+                    <td colspan="6" class="empty-message">엑셀 파일을 업로드하면 이곳에 분리된 표가 정리됩니다.</td>
                 </tr>
             </tbody>
         </table>
@@ -130,10 +191,12 @@
 </div>
 
 <script>
-    let globalData = []; // 엑셀 원본 데이터를 저장할 변수
-    let headers = [];    // 엑셀 열 이름(헤더)을 저장할 변수
+    let globalData = []; 
+    let uniqueProducts = new Set();
+    let uniqueProcesses = new Set();
+    let uniqueLots = new Set();
+    let uniqueRemarks = new Set();
 
-    // 엑셀 파일이 업로드 되면 실행되는 함수
     document.getElementById('excelFile').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -143,88 +206,200 @@
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, {type: 'array'});
             
-            // 첫 번째 시트의 이름 가져오기
             const firstSheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[firstSheetName];
 
-            // 엑셀을 JSON 배열로 변환
-            // defval: "" <- 이 옵션이 빈 셀을 건너뛰지 않고 빈칸으로 확실히 읽어들이게 합니다.
-            globalData = XLSX.utils.sheet_to_json(worksheet, {defval: ""});
+            const rawData = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ""});
             
-            if(globalData.length > 0) {
-                headers = Object.keys(globalData[0]); // 첫 번째 행의 키값을 헤더로 사용
-                renderTable(globalData); // 전체 데이터 화면에 출력
+            globalData = [];
+            uniqueProducts.clear();
+            uniqueProcesses.clear();
+            uniqueLots.clear();
+            uniqueRemarks.clear();
+
+            let currentProdDate = ""; // 날짜 블록별 관리용 변수
+            let colIdx = { product: -1, process: -1, qty: -1, remark: -1, date: -1 };
+
+            // 헤더 및 날짜 위치 파악 루프
+            for (let i = 0; i < rawData.length; i++) {
+                let row = rawData[i].map(cell => String(cell).trim());
+
+                // 생산일자 찾기
+                if (row.includes("생산일자")) {
+                    let dIdx = row.indexOf("생산일자");
+                    // 바로 다음 행이나 같은 행에서 날짜 값 추출 시도
+                    if (i + 1 < rawData.length) {
+                        let nextVal = String(rawData[i+1][dIdx] || "").trim();
+                        if (nextVal) currentProdDate = nextVal.split(' ')[0]; // 시간 제거 후 날짜만
+                    }
+                }
+
+                // 테이블 헤더 행 찾기
+                if (row.includes("제품명") && row.includes("공정")) {
+                    colIdx.product = row.indexOf("제품명");
+                    colIdx.process = row.indexOf("공정");
+                    colIdx.qty = row.indexOf("생산수량");
+                    colIdx.remark = row.indexOf("비고");
+                    
+                    // 데이터 추출 시작
+                    for (let j = i + 1; j < rawData.length; j++) {
+                        let dataRow = rawData[j];
+                        let pName = String(dataRow[colIdx.product] || "").trim();
+                        
+                        // 새로운 헤더를 만나거나 빈 줄이면 건너뛰기
+                        if (!pName || pName === "제품명" || pName.includes("업무보고")) {
+                            if (pName.includes("생산 일일 업무보고")) {
+                                // 새로운 보고 블록일 때 날짜 갱신 시도
+                                for (let d = j; d < Math.min(j + 3, rawData.length); d++) {
+                                    for (let c = 0; c < rawData[d].length; c++) {
+                                        let val = String(rawData[d][c]).trim();
+                                        if (val.includes("2026-") || val.includes("2025-") || val.includes("/")) {
+                                            currentProdDate = val.split(' ')[0];
+                                        }
+                                    }
+                                }
+                            }
+                            continue;
+                        }
+
+                        let rawProcessStr = String(dataRow[colIdx.process] || "").trim();
+                        let qty = String(dataRow[colIdx.qty] || "").trim();
+                        let remark = String(dataRow[colIdx.remark] || "").trim();
+
+                        // 공정과 로트 분리 로직 (예: "박스 포장 (로트 264211)" 또는 "(로트2646911)")
+                        let cleanProcess = rawProcessStr;
+                        let extractedLot = "";
+
+                        // 괄호 안의 로트 번호 추출 정규식
+                        let lotMatch = rawProcessStr.match(/\((?:로트\s*[:]?)\s*([^)]+)\)/i);
+                        if (lotMatch) {
+                            extractedLot = lotMatch[1].trim();
+                            // 공정명에서 로트 괄호 부분 제거
+                            cleanProcess = rawProcessStr.replace(lotMatch[0], "").trim();
+                        } else {
+                            // 괄호 형태가 아닐 경우 단어 단위 체크
+                            let parts = rawProcessStr.split(/로트[:\s]*/);
+                            if (parts.length > 1) {
+                                cleanProcess = parts[0].trim();
+                                extractedLot = parts[1].replace(/[()]/g, "").trim();
+                            }
+                        }
+
+                        // 수량 숫자에 천 단위 콤마 포맷팅 적용
+                        let formattedQty = qty;
+                        if (!isNaN(qty) && qty !== "") {
+                            formattedQty = Number(qty).toLocaleString();
+                        }
+
+                        globalData.push({
+                            "생산일자": currentProdDate || "-",
+                            "제품명": pName,
+                            "공정": cleanProcess || rawProcessStr,
+                            "로트": extractedLot || "-",
+                            "생산수량": formattedQty,
+                            "비고": remark
+                        });
+
+                        // 드롭다운(소분류) 리스트에 추가
+                        if (pName && pName !== '특이사항') uniqueProducts.add(pName);
+                        if (cleanProcess && pName !== '특이사항') uniqueProcesses.add(cleanProcess);
+                        if (extractedLot) uniqueLots.add(extractedLot);
+                        if (remark) uniqueRemarks.add(remark);
+                    }
+                }
+            }
+
+            if (globalData.length > 0) {
+                populateDropdowns();
+                renderTable(globalData);
             } else {
-                alert("엑셀 파일에 데이터가 없습니다.");
+                alert("엑셀에서 데이터를 추출하지 못했습니다. 파일 구조를 확인해주세요.");
             }
         };
         reader.readAsArrayBuffer(file);
     });
 
-    // 다중 조건 검색 함수
+    // 소분류 드롭다운 항목 세팅
+    function populateDropdowns() {
+        const selProduct = document.getElementById('searchProduct');
+        const selProcess = document.getElementById('searchProcess');
+        const selLot = document.getElementById('searchLot');
+        const selRemark = document.getElementById('searchRemark');
+
+        selProduct.innerHTML = '<option value="">전체 제품명</option>';
+        selProcess.innerHTML = '<option value="">전체 공정</option>';
+        selLot.innerHTML = '<option value="">전체 로트</option>';
+        selRemark.innerHTML = '<option value="">전체 상태</option>';
+
+        Array.from(uniqueProducts).sort().forEach(p => {
+            selProduct.innerHTML += `<option value="${p}">${p}</option>`;
+        });
+        Array.from(uniqueProcesses).sort().forEach(p => {
+            selProcess.innerHTML += `<option value="${p}">${p}</option>`;
+        });
+        Array.from(uniqueLots).sort().forEach(l => {
+            selLot.innerHTML += `<option value="${l}">${l}</option>`;
+        });
+        Array.from(uniqueRemarks).sort().forEach(r => {
+            selRemark.innerHTML += `<option value="${r}">${r}</option>`;
+        });
+    }
+
+    // 조건별 필터링 기능
     function filterData() {
         if (globalData.length === 0) return;
 
-        // 검색어 가져오기 (대소문자 구분을 없애기 위해 소문자로 변환)
-        const sProduct = document.getElementById('searchProduct').value.toLowerCase();
-        const sLot = document.getElementById('searchLot').value.toLowerCase();
-        const sProcess = document.getElementById('searchProcess').value.toLowerCase();
-        const sQty = document.getElementById('searchQuantity').value.toLowerCase();
+        const sProduct = document.getElementById('searchProduct').value;
+        const sProcess = document.getElementById('searchProcess').value;
+        const sLot = document.getElementById('searchLot').value;
+        const sRemark = document.getElementById('searchRemark').value;
 
-        // 데이터 필터링
         const filtered = globalData.filter(row => {
-            // 엑셀의 열 이름(공백 포함 등)에 유연하게 대응하기 위한 값을 찾는 내부 함수
-            const getVal = (keyword1, keyword2) => {
-                const key = Object.keys(row).find(k => k.includes(keyword1) || (keyword2 && k.toLowerCase().includes(keyword2)));
-                return key ? String(row[key]).toLowerCase() : "";
-            };
-
-            const valProduct = getVal('제품명', 'product');
-            const valLot = getVal('로트', 'lot');
-            const valProcess = getVal('공정', 'process');
-            const valQty = getVal('수량', 'qty'); // 생산수량, 수량 모두 매칭되게 처리
-
-            // 입력된 검색어가 포함되어 있는지 확인 (AND 조건)
-            return valProduct.includes(sProduct) &&
-                   valLot.includes(sLot) &&
-                   valProcess.includes(sProcess) &&
-                   valQty.includes(sQty);
+            return (sProduct === "" || row['제품명'] === sProduct) &&
+                   (sProcess === "" || row['공정'] === sProcess) &&
+                   (sLot === "" || row['로트'] === sLot) &&
+                   (sRemark === "" || row['비고'] === sRemark);
         });
 
-        // 필터링 된 데이터로 표 다시 그리기
         renderTable(filtered);
     }
 
-    // 화면에 표를 그려주는 함수
+    // 초기화 버튼
+    function resetSearch() {
+        document.getElementById('searchProduct').value = "";
+        document.getElementById('searchProcess').value = "";
+        document.getElementById('searchLot').value = "";
+        document.getElementById('searchRemark').value = "";
+        filterData();
+    }
+
+    // 테이블 렌더링
     function renderTable(data) {
-        const thead = document.querySelector('#dataTable thead');
         const tbody = document.querySelector('#dataTable tbody');
-        
-        thead.innerHTML = '';
         tbody.innerHTML = '';
 
         if (data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="100%" class="empty-message">검색 결과가 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-message">조건에 맞는 데이터가 없습니다.</td></tr>';
             return;
         }
 
-        // 테이블 헤더 (<thead>) 생성
-        let trHead = document.createElement('tr');
-        headers.forEach(h => {
-            let th = document.createElement('th');
-            th.textContent = h;
-            trHead.appendChild(th);
-        });
-        thead.appendChild(trHead);
-
-        // 테이블 본문 (<tbody>) 데이터 생성
         data.forEach(row => {
             let tr = document.createElement('tr');
-            headers.forEach(h => {
-                let td = document.createElement('td');
-                td.textContent = row[h]; // 빈 셀도 defval:"" 덕분에 깨끗한 빈칸으로 표시됨
-                tr.appendChild(td);
-            });
+            
+            if (row['제품명'] === '특이사항') {
+                tr.classList.add('row-special');
+            }
+
+            // 순서대로 칸 분리 생성
+            let htmlContent = `
+                <td class="text-center">${row['생산일자']}</td>
+                <td><strong>${row['제품명']}</strong></td>
+                <td>${row['공정']}</td>
+                <td><span style="background:#eef2f5; padding:3px 8px; border-radius:4px; font-family:monospace;">${row['로트']}</span></td>
+                <td class="text-right">${row['생산수량']}</td>
+                <td>${row['비고']}</td>
+            `;
+            tr.innerHTML = htmlContent;
             tbody.appendChild(tr);
         });
     }
