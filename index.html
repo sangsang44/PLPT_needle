@@ -166,8 +166,8 @@
     
     <!-- 상단 안내 바 -->
     <div class="top-info-bar">
-        <span>📁 <strong>GitHub 저장소 연동 모드:</strong> 깃허브에 업로드된 생산현황 엑셀 파일들을 자동으로 불러와 링크로 접속한 누구나 동일하게 조회할 수 있습니다.</span>
-        <span id="fileCountBadge" style="font-weight: bold; color: #2980b9;">연동된 파일 로딩 중...</span>
+        <span>📁 <strong>GitHub 저장소 자동 연동 모드:</strong> 저장소에 업로드된 모든 엑셀 파일(.xlsx)을 자동으로 감지하여 통합 조회합니다.</span>
+        <span id="fileCountBadge" style="font-weight: bold; color: #2980b9;">엑셀 파일 스캔 중...</span>
     </div>
 
     <!-- 검색 영역 (가로 한 줄 배치) -->
@@ -243,137 +243,178 @@
 <script>
     let globalData = [];     
 
-    // 페이지가 열리면 깃허브에 올라간 엑셀 파일 목록을 자동으로 읽어옴
     window.onload = function() {
-        loadGithubExcelFiles();
+        loadAllGithubExcelFiles();
     };
 
-    // 깃허브에 업로드할 엑셀 파일들의 이름을 여기에 계속 추가해주시면 됩니다!
-    const excelFileNames = [
-        "생산일일보고_주사침팀 261110.xlsx"
-        // 다른 날짜 파일을 올리신다면 여기에 쉼표로 추가하세요:
-        // "생산일일보고_주사침팀 261109.xlsx",
-        // "생산일일보고_주사침팀 261108.xlsx"
-    ];
+    // GitHub API를 통해 저장소에 있는 모든 .xlsx 파일을 자동으로 찾아오는 함수
+    async function loadAllGithubExcelFiles() {
+        try {
+            // 현재 저장소 정보를 GitHub API로 조회 (owner 및 repo 이름 자동 추출)
+            const pathSegments = window.location.pathname.split('/').filter(Boolean);
+            let owner = "";
+            let repo = "";
 
-    async function loadGithubExcelFiles() {
-        let rawCombined = [];
-        let loadedCount = 0;
+            if (window.location.hostname.includes("github.io")) {
+                owner = window.location.hostname.split('.')[0];
+                repo = pathSegments.length > 0 ? pathSegments[0] : "";
+            }
 
-        for (let fileName of excelFileNames) {
-            try {
-                let response = await fetch(fileName);
-                if (!response.ok) continue;
-                let buffer = await response.arrayBuffer();
-                
-                const workbook = XLSX.read(new Uint8Array(buffer), {type: 'array', cellDates: true});
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                const rawData = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ""});
-                
-                let currentProdDate = ""; 
-                let colIdx = { product: -1, process: -1, qty: -1, remark: -1 };
+            let filesToProcess = [];
 
-                for (let i = 0; i < rawData.length; i++) {
-                    let row = rawData[i].map(cell => String(cell).trim());
+            if (owner && repo) {
+                // GitHub API 호출 시도
+                let apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents`;
+                let response = await fetch(apiUrl);
+                if (response.ok) {
+                    let repoContents = await response.json();
+                    // 이름이 .xlsx로 끝나고 '생산일일보고'가 포함된 파일들만 자동 추출
+                    filesToProcess = repoContents
+                        .filter(item => item.type === 'file' && item.name.endsWith('.xlsx') && item.name.includes('생산일일보고'))
+                        .map(item => item.name);
+                }
+            }
 
-                    if (row.includes("생산일자")) {
-                        let dIdx = row.indexOf("생산일자");
-                        if (i + 1 < rawData.length) {
-                            let rawDateVal = rawData[i+1][dIdx];
-                            if (rawDateVal !== undefined && rawDateVal !== "") {
-                                if (rawDateVal instanceof Date) {
-                                    currentProdDate = `${rawDateVal.getFullYear()}-${String(rawDateVal.getMonth() + 1).padStart(2, '0')}-${String(rawDateVal.getDate()).padStart(2, '0')}`;
-                                } else {
-                                    currentProdDate = excelDateToJSDate(rawDateVal);
+            // 만약 API 호출이 안 되거나 파일이 없을 경우 대비 기본 파일명 패턴 추출 시도
+            if (filesToProcess.length === 0) {
+                // 사용자가 올린 파일명 규칙에 맞춘 Fallback 처리
+                filesToProcess = [
+                    "생산일일보고_주사침팀 260605.xlsx", "생산일일보고_주사침팀 260612.xlsx",
+                    "생산일일보고_주사침팀 260619, 20.xlsx", "생산일일보고_주사침팀 260626, 27.xlsx",
+                    "생산일일보고_주사침팀 260703.xlsx", "생산일일보고_주사침팀 260710.xlsx",
+                    "생산일일보고_주사침팀 260716.xlsx", "생산일일보고_주사침팀 260724.xlsx",
+                    "생산일일보고_주사침팀 260731.xlsx", "생산일일보고_주사침팀 260807.xlsx",
+                    "생산일일보고_주사침팀 260814.xlsx", "생산일일보고_주사침팀 260821.xlsx",
+                    "생산일일보고_주사침팀 260828.xlsx", "생산일일보고_주사침팀 260901.xlsx",
+                    "생산일일보고_주사침팀 261002.xlsx", "생산일일보고_주사침팀 261008.xlsx",
+                    "생산일일보고_주사침팀 261016.xlsx", "생산일일보고_주사침팀 261023.xlsx",
+                    "생산일일보고_주사침팀 261030.xlsx", "생산일일보고_주사침팀 261106.xlsx",
+                    "생산일일보고_주사침팀 261110.xlsx"
+                ];
+            }
+
+            let rawCombined = [];
+            let loadedCount = 0;
+
+            for (let fileName of filesToProcess) {
+                try {
+                    let res = await fetch(fileName);
+                    if (!res.ok) continue;
+                    let buffer = await res.arrayBuffer();
+                    
+                    const workbook = XLSX.read(new Uint8Array(buffer), {type: 'array', cellDates: true});
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const rawData = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ""});
+                    
+                    let currentProdDate = ""; 
+                    let colIdx = { product: -1, process: -1, qty: -1, remark: -1 };
+
+                    for (let i = 0; i < rawData.length; i++) {
+                        let row = rawData[i].map(cell => String(cell).trim());
+
+                        if (row.includes("생산일자")) {
+                            let dIdx = row.indexOf("생산일자");
+                            if (i + 1 < rawData.length) {
+                                let rawDateVal = rawData[i+1][dIdx];
+                                if (rawDateVal !== undefined && rawDateVal !== "") {
+                                    if (rawDateVal instanceof Date) {
+                                        currentProdDate = `${rawDateVal.getFullYear()}-${String(rawDateVal.getMonth() + 1).padStart(2, '0')}-${String(rawDateVal.getDate()).padStart(2, '0')}`;
+                                    } else {
+                                        currentProdDate = excelDateToJSDate(rawDateVal);
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    if (row.includes("제품명") && row.includes("공정")) {
-                        colIdx.product = row.indexOf("제품명");
-                        colIdx.process = row.indexOf("공정");
-                        colIdx.qty = row.indexOf("생산수량");
-                        colIdx.remark = row.indexOf("비고");
-                        
-                        for (let j = i + 1; j < rawData.length; j++) {
-                            let dataRow = rawData[j];
-                            let pName = String(dataRow[colIdx.product] || "").trim();
+                        if (row.includes("제품명") && row.includes("공정")) {
+                            colIdx.product = row.indexOf("제품명");
+                            colIdx.process = row.indexOf("공정");
+                            colIdx.qty = row.indexOf("생산수량");
+                            colIdx.remark = row.indexOf("비고");
                             
-                            if (!pName || pName === "제품명" || pName.includes("업무보고")) {
-                                if (pName.includes("생산 일일 업무보고")) {
-                                    for (let d = j; d < Math.min(j + 3, rawData.length); d++) {
-                                        for (let c = 0; c < rawData[d].length; c++) {
-                                            let val = rawData[d][c];
-                                            if (val !== undefined && val !== "") {
-                                                let sVal = String(val);
-                                                if (sVal.includes("2026-") || sVal.includes("2025-") || !isNaN(val) && Number(val) > 40000) {
-                                                    if (val instanceof Date) {
-                                                        currentProdDate = `${val.getFullYear()}-${String(val.getMonth()+1).padStart(2,'0')}-${String(val.getDate()).padStart(2,'0')}`;
-                                                    } else {
-                                                        currentProdDate = excelDateToJSDate(val);
+                            for (let j = i + 1; j < rawData.length; j++) {
+                                let dataRow = rawData[j];
+                                let pName = String(dataRow[colIdx.product] || "").trim();
+                                
+                                if (!pName || pName === "제품명" || pName.includes("업무보고")) {
+                                    if (pName.includes("생산 일일 업무보고")) {
+                                        for (let d = j; d < Math.min(j + 3, rawData.length); d++) {
+                                            for (let c = 0; c < rawData[d].length; c++) {
+                                                let val = rawData[d][c];
+                                                if (val !== undefined && val !== "") {
+                                                    let sVal = String(val);
+                                                    if (sVal.includes("2026-") || sVal.includes("2025-") || !isNaN(val) && Number(val) > 40000) {
+                                                        if (val instanceof Date) {
+                                                            currentProdDate = `${val.getFullYear()}-${String(val.getMonth()+1).padStart(2,'0')}-${String(val.getDate()).padStart(2,'0')}`;
+                                                        } else {
+                                                            currentProdDate = excelDateToJSDate(val);
+                                                        }
                                                     }
                                                 }
                                             }
                                         }
                                     }
+                                    continue;
                                 }
-                                continue;
-                            }
 
-                            if (pName === "특이사항") continue;
+                                if (pName === "특이사항") continue;
 
-                            let rawProcessStr = String(dataRow[colIdx.process] || "").trim();
-                            let qty = String(dataRow[colIdx.qty] || "").trim();
-                            let remark = String(dataRow[colIdx.remark] || "").trim();
+                                let rawProcessStr = String(dataRow[colIdx.process] || "").trim();
+                                let qty = String(dataRow[colIdx.qty] || "").trim();
+                                let remark = String(dataRow[colIdx.remark] || "").trim();
 
-                            let cleanProcess = rawProcessStr;
-                            let extractedLot = "";
+                                let cleanProcess = rawProcessStr;
+                                let extractedLot = "";
 
-                            let lotMatch = rawProcessStr.match(/\((?:로트\s*[:]?)\s*([^)]+)\)/i);
-                            if (lotMatch) {
-                                extractedLot = lotMatch[1].trim();
-                                cleanProcess = rawProcessStr.replace(lotMatch[0], "").trim();
-                            } else {
-                                let parts = rawProcessStr.split(/로트[:\s]*/);
-                                if (parts.length > 1) {
-                                    cleanProcess = parts[0].trim();
-                                    extractedLot = parts[1].replace(/[()]/g, "").trim();
+                                let lotMatch = rawProcessStr.match(/\((?:로트\s*[:]?)\s*([^)]+)\)/i);
+                                if (lotMatch) {
+                                    extractedLot = lotMatch[1].trim();
+                                    cleanProcess = rawProcessStr.replace(lotMatch[0], "").trim();
+                                } else {
+                                    let parts = rawProcessStr.split(/로트[:\s]*/);
+                                    if (parts.length > 1) {
+                                        cleanProcess = parts[0].trim();
+                                        extractedLot = parts[1].replace(/[()]/g, "").trim();
+                                    }
                                 }
+
+                                let cleanNum = Number(String(qty).replace(/[^0-9.-]+/g,""));
+                                let numericQty = !isNaN(cleanNum) ? cleanNum : 0;
+
+                                rawCombined.push({
+                                    "생산일자": currentProdDate || "-",
+                                    "제품명": pName,
+                                    "공정": cleanProcess || rawProcessStr,
+                                    "로트": extractedLot || "-",
+                                    "생산수량": numericQty,
+                                    "비고": remark
+                                });
                             }
-
-                            let cleanNum = Number(String(qty).replace(/[^0-9.-]+/g,""));
-                            let numericQty = !isNaN(cleanNum) ? cleanNum : 0;
-
-                            rawCombined.push({
-                                "생산일자": currentProdDate || "-",
-                                "제품명": pName,
-                                "공정": cleanProcess || rawProcessStr,
-                                "로트": extractedLot || "-",
-                                "생산수량": numericQty,
-                                "비고": remark
-                            });
                         }
                     }
+                    loadedCount++;
+                } catch(err) {
+                    console.error("파일 로드 실패:", fileName);
                 }
-                loadedCount++;
-            } catch(err) {
-                console.error("파일 로드 실패:", fileName);
             }
+
+            // 중복 데이터 제거
+            let uniqueMap = new Map();
+            rawCombined.forEach(item => {
+                let key = `${item['생산일자']}_${item['제품명']}_${item['공정']}_${item['로트']}_${item['생산수량']}_${item['비고']}`;
+                uniqueMap.set(key, item);
+            });
+            globalData = Array.from(uniqueMap.values());
+
+            document.getElementById('fileCountBadge').textContent = `자동 연동된 파일: ${loadedCount}개`;
+            updateDropdownOptions();
+            renderTable(globalData);
+
+        } catch (e) {
+            console.error("자동 파일 스캔 오류:", e);
+            document.getElementById('fileCountBadge').textContent = `파일 연동 오류 발생`;
         }
-
-        // 중복 데이터 제거
-        let uniqueMap = new Map();
-        rawCombined.forEach(item => {
-            let key = `${item['생산일자']}_${item['제품명']}_${item['공정']}_${item['로트']}_${item['생산수량']}_${item['비고']}`;
-            uniqueMap.set(key, item);
-        });
-        globalData = Array.from(uniqueMap.values());
-
-        document.getElementById('fileCountBadge').textContent = `연동된 파일: ${loadedCount}개`;
-        updateDropdownOptions();
-        renderTable(globalData);
     }
 
     function excelDateToJSDate(serial) {
@@ -424,7 +465,6 @@
         let lots = [...new Set(filterForDropdown('로트').map(r => r['로트']))].filter(v => v && v !== '-');
         let remarks = [...new Set(filterForDropdown('비고').map(r => r['비고']))].filter(v => v);
 
-        // 생산일자는 최신순(내림차순, reverse) 정렬
         dates.sort().reverse();
         products.sort();
         processes.sort();
