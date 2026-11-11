@@ -15,7 +15,7 @@
             color: #333;
         }
         .container {
-            max-width: 1350px;
+            max-width: 1400px;
             margin: 0 auto;
             background-color: #fff;
             padding: 30px;
@@ -39,7 +39,7 @@
         }
         .search-section {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) 100px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) auto;
             gap: 15px;
             margin-bottom: 20px;
             align-items: flex-end;
@@ -67,8 +67,27 @@
             box-sizing: border-box;
             background-color: #fff;
         }
+        .button-group {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-search {
+            padding: 10px 18px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            height: 42px;
+        }
+        .btn-search:hover {
+            background-color: #2980b9;
+        }
         .btn-reset {
-            padding: 10px 15px;
+            padding: 10px 18px;
             background-color: #95a5a6;
             color: white;
             border: none;
@@ -113,11 +132,6 @@
             padding: 20px;
             color: #7f8c8d;
         }
-        .row-special {
-            background-color: #fff3cd !important;
-            font-weight: bold;
-            color: #856404;
-        }
         .text-center {
             text-align: center;
         }
@@ -136,37 +150,47 @@
         <input type="file" id="excelFile" accept=".xlsx, .xls">
     </div>
 
-    <!-- 소분류(드롭다운) 검색 영역 -->
+    <!-- 소분류(드롭다운) 연동 검색 영역 -->
     <div class="search-section">
         <div class="filter-group">
-            <label>제품명 (소분류)</label>
-            <select id="searchProduct" onchange="filterData()">
+            <label>생산일자</label>
+            <select id="searchDate" onchange="updateDropdownOptions()">
+                <option value="">전체 일자</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label>제품명</label>
+            <select id="searchProduct" onchange="updateDropdownOptions()">
                 <option value="">전체 제품명</option>
             </select>
         </div>
         
         <div class="filter-group">
-            <label>공정명 (소분류)</label>
-            <select id="searchProcess" onchange="filterData()">
+            <label>공정명</label>
+            <select id="searchProcess" onchange="updateDropdownOptions()">
                 <option value="">전체 공정</option>
             </select>
         </div>
 
         <div class="filter-group">
-            <label>로트 번호 (소분류)</label>
-            <select id="searchLot" onchange="filterData()">
+            <label>로트 번호</label>
+            <select id="searchLot" onchange="updateDropdownOptions()">
                 <option value="">전체 로트</option>
             </select>
         </div>
         
         <div class="filter-group">
-            <label>비고/상태 (소분류)</label>
-            <select id="searchRemark" onchange="filterData()">
+            <label>비고/상태</label>
+            <select id="searchRemark">
                 <option value="">전체 상태</option>
             </select>
         </div>
 
-        <button class="btn-reset" onclick="resetSearch()">초기화</button>
+        <div class="button-group">
+            <button class="btn-search" onclick="filterData()">검색</button>
+            <button class="btn-reset" onclick="resetSearch()">초기화</button>
+        </div>
     </div>
 
     <div class="table-container">
@@ -192,10 +216,22 @@
 
 <script>
     let globalData = []; 
-    let uniqueProducts = new Set();
-    let uniqueProcesses = new Set();
-    let uniqueLots = new Set();
-    let uniqueRemarks = new Set();
+
+    function excelDateToJSDate(serial) {
+        if (!isNaN(serial) && serial > 30000) {
+            let utc_days = Math.floor(serial - 25569);
+            let utc_value = utc_days * 86400;
+            let date_info = new Date(utc_value * 1000);
+            let year = date_info.getUTCFullYear();
+            let month = String(date_info.getUTCMonth() + 1).padStart(2, '0');
+            let day = String(date_info.getUTCDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        let str = String(serial).trim();
+        if (str.includes('T')) str = str.split('T')[0];
+        if (str.includes(' ')) str = str.split(' ')[0];
+        return str;
+    }
 
     document.getElementById('excelFile').addEventListener('change', function(e) {
         const file = e.target.files[0];
@@ -204,57 +240,60 @@
         const reader = new FileReader();
         reader.onload = function(e) {
             const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
+            const workbook = XLSX.read(data, {type: 'array', cellDates: true});
             
             const firstSheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[firstSheetName];
-
             const rawData = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ""});
             
             globalData = [];
-            uniqueProducts.clear();
-            uniqueProcesses.clear();
-            uniqueLots.clear();
-            uniqueRemarks.clear();
+            let currentProdDate = ""; 
+            let colIdx = { product: -1, process: -1, qty: -1, remark: -1 };
 
-            let currentProdDate = ""; // 날짜 블록별 관리용 변수
-            let colIdx = { product: -1, process: -1, qty: -1, remark: -1, date: -1 };
-
-            // 헤더 및 날짜 위치 파악 루프
             for (let i = 0; i < rawData.length; i++) {
                 let row = rawData[i].map(cell => String(cell).trim());
 
-                // 생산일자 찾기
                 if (row.includes("생산일자")) {
                     let dIdx = row.indexOf("생산일자");
-                    // 바로 다음 행이나 같은 행에서 날짜 값 추출 시도
                     if (i + 1 < rawData.length) {
-                        let nextVal = String(rawData[i+1][dIdx] || "").trim();
-                        if (nextVal) currentProdDate = nextVal.split(' ')[0]; // 시간 제거 후 날짜만
+                        let rawDateVal = rawData[i+1][dIdx];
+                        if (rawDateVal !== undefined && rawDateVal !== "") {
+                            if (rawDateVal instanceof Date) {
+                                let year = rawDateVal.getFullYear();
+                                let month = String(rawDateVal.getMonth() + 1).padStart(2, '0');
+                                let day = String(rawDateVal.getDate()).padStart(2, '0');
+                                currentProdDate = `${year}-${month}-${day}`;
+                            } else {
+                                currentProdDate = excelDateToJSDate(rawDateVal);
+                            }
+                        }
                     }
                 }
 
-                // 테이블 헤더 행 찾기
                 if (row.includes("제품명") && row.includes("공정")) {
                     colIdx.product = row.indexOf("제품명");
                     colIdx.process = row.indexOf("공정");
                     colIdx.qty = row.indexOf("생산수량");
                     colIdx.remark = row.indexOf("비고");
                     
-                    // 데이터 추출 시작
                     for (let j = i + 1; j < rawData.length; j++) {
                         let dataRow = rawData[j];
                         let pName = String(dataRow[colIdx.product] || "").trim();
                         
-                        // 새로운 헤더를 만나거나 빈 줄이면 건너뛰기
                         if (!pName || pName === "제품명" || pName.includes("업무보고")) {
                             if (pName.includes("생산 일일 업무보고")) {
-                                // 새로운 보고 블록일 때 날짜 갱신 시도
                                 for (let d = j; d < Math.min(j + 3, rawData.length); d++) {
                                     for (let c = 0; c < rawData[d].length; c++) {
-                                        let val = String(rawData[d][c]).trim();
-                                        if (val.includes("2026-") || val.includes("2025-") || val.includes("/")) {
-                                            currentProdDate = val.split(' ')[0];
+                                        let val = rawData[d][c];
+                                        if (val !== undefined && val !== "") {
+                                            let sVal = String(val);
+                                            if (sVal.includes("2026-") || sVal.includes("2025-") || !isNaN(val) && Number(val) > 40000) {
+                                                if (val instanceof Date) {
+                                                    currentProdDate = `${val.getFullYear()}-${String(val.getMonth()+1).padStart(2,'0')}-${String(val.getDate()).padStart(2,'0')}`;
+                                                } else {
+                                                    currentProdDate = excelDateToJSDate(val);
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -262,22 +301,20 @@
                             continue;
                         }
 
+                        if (pName === "특이사항") continue;
+
                         let rawProcessStr = String(dataRow[colIdx.process] || "").trim();
                         let qty = String(dataRow[colIdx.qty] || "").trim();
                         let remark = String(dataRow[colIdx.remark] || "").trim();
 
-                        // 공정과 로트 분리 로직 (예: "박스 포장 (로트 264211)" 또는 "(로트2646911)")
                         let cleanProcess = rawProcessStr;
                         let extractedLot = "";
 
-                        // 괄호 안의 로트 번호 추출 정규식
                         let lotMatch = rawProcessStr.match(/\((?:로트\s*[:]?)\s*([^)]+)\)/i);
                         if (lotMatch) {
                             extractedLot = lotMatch[1].trim();
-                            // 공정명에서 로트 괄호 부분 제거
                             cleanProcess = rawProcessStr.replace(lotMatch[0], "").trim();
                         } else {
-                            // 괄호 형태가 아닐 경우 단어 단위 체크
                             let parts = rawProcessStr.split(/로트[:\s]*/);
                             if (parts.length > 1) {
                                 cleanProcess = parts[0].trim();
@@ -285,10 +322,10 @@
                             }
                         }
 
-                        // 수량 숫자에 천 단위 콤마 포맷팅 적용
                         let formattedQty = qty;
-                        if (!isNaN(qty) && qty !== "") {
-                            formattedQty = Number(qty).toLocaleString();
+                        let cleanNum = Number(String(qty).replace(/[^0-9.-]+/g,""));
+                        if (!isNaN(cleanNum) && qty !== "") {
+                            formattedQty = cleanNum.toLocaleString();
                         }
 
                         globalData.push({
@@ -299,18 +336,12 @@
                             "생산수량": formattedQty,
                             "비고": remark
                         });
-
-                        // 드롭다운(소분류) 리스트에 추가
-                        if (pName && pName !== '특이사항') uniqueProducts.add(pName);
-                        if (cleanProcess && pName !== '특이사항') uniqueProcesses.add(cleanProcess);
-                        if (extractedLot) uniqueLots.add(extractedLot);
-                        if (remark) uniqueRemarks.add(remark);
                     }
                 }
             }
 
             if (globalData.length > 0) {
-                populateDropdowns();
+                updateDropdownOptions();
                 renderTable(globalData);
             } else {
                 alert("엑셀에서 데이터를 추출하지 못했습니다. 파일 구조를 확인해주세요.");
@@ -319,43 +350,70 @@
         reader.readAsArrayBuffer(file);
     });
 
-    // 소분류 드롭다운 항목 세팅
-    function populateDropdowns() {
+    // 선택된 조건에 맞춰 상호 연동되는 드롭다운 옵션 업데이트 함수
+    function updateDropdownOptions() {
+        if (globalData.length === 0) return;
+
+        const selDate = document.getElementById('searchDate');
         const selProduct = document.getElementById('searchProduct');
         const selProcess = document.getElementById('searchProcess');
         const selLot = document.getElementById('searchLot');
         const selRemark = document.getElementById('searchRemark');
 
-        selProduct.innerHTML = '<option value="">전체 제품명</option>';
-        selProcess.innerHTML = '<option value="">전체 공정</option>';
-        selLot.innerHTML = '<option value="">전체 로트</option>';
-        selRemark.innerHTML = '<option value="">전체 상태</option>';
+        const curDate = selDate.value;
+        const curProd = selProduct.value;
+        const curProc = selProcess.value;
+        const curLot = selLot.value;
+        const curRem = selRemark.value;
 
-        Array.from(uniqueProducts).sort().forEach(p => {
-            selProduct.innerHTML += `<option value="${p}">${p}</option>`;
-        });
-        Array.from(uniqueProcesses).sort().forEach(p => {
-            selProcess.innerHTML += `<option value="${p}">${p}</option>`;
-        });
-        Array.from(uniqueLots).sort().forEach(l => {
-            selLot.innerHTML += `<option value="${l}">${l}</option>`;
-        });
-        Array.from(uniqueRemarks).sort().forEach(r => {
-            selRemark.innerHTML += `<option value="${r}">${r}</option>`;
-        });
+        // 현재 선택된 조건을 제외하고 필터링된 부분집합 추출
+        let filterForDropdown = (targetField) => {
+            return globalData.filter(row => {
+                if (targetField !== '생산일자' && curDate && row['생산일자'] !== curDate) return false;
+                if (targetField !== '제품명' && curProd && row['제품명'] !== curProd) return false;
+                if (targetField !== '공정' && curProc && row['공정'] !== curProc) return false;
+                if (targetField !== '로트' && curLot && row['로트'] !== curLot) return false;
+                if (targetField !== '비고' && curRem && row['비고'] !== curRem) return false;
+                return true;
+            });
+        };
+
+        // 각 드롭다운의 고유값 추출
+        let dates = [...new Set(filterForDropdown('생산일자').map(r => r['생산일자']))].filter(v => v && v !== '-');
+        let products = [...new Set(filterForDropdown('제품명').map(r => r['제품명']))].filter(v => v);
+        let processes = [...new Set(filterForDropdown('공정').map(r => r['공정']))].filter(v => v);
+        let lots = [...new Set(filterForDropdown('로트').map(r => r['로트']))].filter(v => v && v !== '-');
+        let remarks = [...new Set(filterForDropdown('비고').map(r => r['비고']))].filter(v => v);
+
+        // 드롭다운 HTML 갱신 함수 (선택 유지)
+        let updateSelectHtml = (element, list, defaultText, currentValue) => {
+            element.innerHTML = `<option value="">${defaultText}</option>`;
+            list.sort().forEach(item => {
+                let selected = (item === currentValue) ? 'selected' : '';
+                element.innerHTML += `<option value="${item}" ${selected}>${item}</option>`;
+            });
+        };
+
+        updateSelectHtml(selDate, dates, '전체 일자', curDate);
+        updateSelectHtml(selProduct, products, '전체 제품명', curProd);
+        updateSelectHtml(selProcess, processes, '전체 공정', curProc);
+        updateSelectHtml(selLot, lots, '전체 로트', curLot);
+        updateSelectHtml(selRemark, remarks, '전체 상태', curRem);
     }
 
-    // 조건별 필터링 기능
+    // [검색] 버튼 클릭 시 최종 테이블에 반영하는 함수
     function filterData() {
         if (globalData.length === 0) return;
 
+        const sDate = document.getElementById('searchDate').value;
         const sProduct = document.getElementById('searchProduct').value;
         const sProcess = document.getElementById('searchProcess').value;
         const sLot = document.getElementById('searchLot').value;
         const sRemark = document.getElementById('searchRemark').value;
 
         const filtered = globalData.filter(row => {
-            return (sProduct === "" || row['제품명'] === sProduct) &&
+            return (sDate === "" || row['생산일자'] === sDate) &&
+                   (sProduct === "" || row['제품명'] === sProduct) &&
                    (sProcess === "" || row['공정'] === sProcess) &&
                    (sLot === "" || row['로트'] === sLot) &&
                    (sRemark === "" || row['비고'] === sRemark);
@@ -364,13 +422,15 @@
         renderTable(filtered);
     }
 
-    // 초기화 버튼
+    // [초기화] 버튼
     function resetSearch() {
+        document.getElementById('searchDate').value = "";
         document.getElementById('searchProduct').value = "";
         document.getElementById('searchProcess').value = "";
         document.getElementById('searchLot').value = "";
         document.getElementById('searchRemark').value = "";
-        filterData();
+        updateDropdownOptions();
+        renderTable(globalData);
     }
 
     // 테이블 렌더링
@@ -385,21 +445,14 @@
 
         data.forEach(row => {
             let tr = document.createElement('tr');
-            
-            if (row['제품명'] === '특이사항') {
-                tr.classList.add('row-special');
-            }
-
-            // 순서대로 칸 분리 생성
-            let htmlContent = `
+            tr.innerHTML = `
                 <td class="text-center">${row['생산일자']}</td>
                 <td><strong>${row['제품명']}</strong></td>
                 <td>${row['공정']}</td>
                 <td><span style="background:#eef2f5; padding:3px 8px; border-radius:4px; font-family:monospace;">${row['로트']}</span></td>
-                <td class="text-right">${row['생산수량']}</td>
+                <td class="text-right"><strong>${row['생산수량']}</strong></td>
                 <td>${row['비고']}</td>
             `;
-            tr.innerHTML = htmlContent;
             tbody.appendChild(tr);
         });
     }
