@@ -171,52 +171,19 @@
             color: #0e6251;
         }
 
-        /* 📱 모바일 화면 최적화 (화면 폭 900px 이하일 때 자동 적용) */
+        /* 📱 모바일 화면 최적화 */
         @media screen and (max-width: 900px) {
-            body {
-                padding: 5px;
-            }
-            .container {
-                padding: 12px;
-            }
-            h1 {
-                font-size: 20px;
-            }
-            .top-info-bar {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
-                font-size: 12px;
-            }
-            .search-section, .input-search-section {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-                padding: 12px;
-            }
-            .filter-group {
-                width: 100%;
-            }
-            .button-group {
-                width: 100%;
-                display: flex;
-                gap: 8px;
-                margin-top: 5px;
-            }
-            .button-group button {
-                flex: 1;
-            }
-            th, td {
-                padding: 9px 10px;
-                font-size: 13px;
-            }
-            .summary-bar {
-                font-size: 14px;
-                padding: 12px 15px;
-            }
-            .summary-value {
-                font-size: 16px;
-            }
+            body { padding: 5px; }
+            .container { padding: 12px; }
+            h1 { font-size: 20px; }
+            .top-info-bar { flex-direction: column; align-items: flex-start; gap: 5px; font-size: 12px; }
+            .search-section, .input-search-section { display: flex; flex-direction: column; gap: 10px; padding: 12px; }
+            .filter-group { width: 100%; }
+            .button-group { width: 100%; display: flex; gap: 8px; margin-top: 5px; }
+            .button-group button { flex: 1; }
+            th, td { padding: 9px 10px; font-size: 13px; }
+            .summary-bar { font-size: 14px; padding: 12px 15px; }
+            .summary-value { font-size: 16px; }
         }
     </style>
 </head>
@@ -273,7 +240,7 @@
     <div class="input-search-section">
         <div class="filter-group">
             <label>생산일자 (직접 입력)</label>
-            <input type="text" id="inputDate" placeholder="일자 입력 (예: 2026-11)">
+            <input type="text" id="inputDate" placeholder="일자 입력 (예: 2026-05)">
         </div>
 
         <div class="filter-group">
@@ -332,7 +299,67 @@
 <script>
     let globalData = [];     
 
-    // GitHub API를 활용해 저장소의 모든 파일을 자동 스캔하고, 실패 시 최신 날짜까지 포함된 목록으로 자동 대응
+    const excelFileNames = [
+        "생산일일보고_주사침팀 260605.xlsx", "생산일일보고_주사침팀 260612.xlsx",
+        "생산일일보고_주사침팀 260619, 20.xlsx", "생산일일보고_주사침팀 260626, 27.xlsx",
+        "생산일일보고_주사침팀 260703.xlsx", "생산일일보고_주사침팀 260710.xlsx",
+        "생산일일보고_주사침팀 260716.xlsx", "생산일일보고_주사침팀 260724.xlsx",
+        "생산일일보고_주사침팀 260731.xlsx", "생산일일보고_주사침팀 260807.xlsx",
+        "생산일일보고_주사침팀 260814.xlsx", "생산일일보고_주사침팀 260821.xlsx",
+        "생산일일보고_주사침팀 260828.xlsx", "생산일일보고_주사침팀 260901.xlsx",
+        "생산일일보고_주사침팀 260904.xlsx", "생산일일보고_주사침팀 260911.xlsx",
+        "생산일일보고_주사침팀 260918.xlsx", "생산일일보고_주사침팀 260923.xlsx",
+        "생산일일보고_주사침팀 261002.xlsx", "생산일일보고_주사침팀 261008.xlsx",
+        "생산일일보고_주사침팀 261016.xlsx", "생산일일보고_주사침팀 261023.xlsx",
+        "생산일일보고_주사침팀 261030.xlsx", "생산일일보고_주사침팀 261106.xlsx",
+        "생산일일보고_주사침팀 261110.xlsx", "생산일일보고_주사침팀 261111.xlsx"
+    ];
+
+    window.onload = function() {
+        loadAllGithubExcelFiles();
+    };
+
+    function excelDateToJSDate(serial) {
+        if (!isNaN(serial) && serial > 30000) {
+            let utc_days = Math.floor(serial - 25569);
+            let utc_value = utc_days * 86400;
+            let date_info = new Date(utc_value * 1000);
+            let year = date_info.getUTCFullYear();
+            let month = String(date_info.getUTCMonth() + 1).padStart(2, '0');
+            let day = String(date_info.getUTCDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        let str = String(serial).trim();
+        if (str.includes('T')) str = str.split('T')[0];
+        if (str.includes(' ')) str = str.split(' ')[0];
+        return str;
+    }
+
+    // 상단 "생산일자" 헤더 셀에서 연도와 월을 추출하는 헬퍼 (예: "2026-05-22,23,25" -> 기본 연도/월 파악)
+    function parseHeaderDates(dateStr) {
+        let datesList = [];
+        if (!dateStr) return datesList;
+        
+        let s = String(dateStr).trim();
+        // 날짜 패턴 추출 (예: 2026-05-22,23,25 또는 2026.5.22 등)
+        let matchYMD = s.match(/(\d{4})[-年./](\d{1,2})[-月./](\d{1,2})/);
+        if (matchYMD) {
+            let year = matchYMD[1];
+            let month = matchYMD[2].padStart(2, '0');
+            
+            // 콤마 등으로 이어진 일자들 분리 (예: 22,23,25)
+            let parts = s.split(/[,가-힣~\s]+/);
+            parts.forEach(p => {
+                let dayNum = p.match(/\d{1,2}/);
+                if (dayNum) {
+                    let day = dayNum[0].padStart(2, '0');
+                    datesList.push(`${year}-${month}-${day}`);
+                }
+            });
+        }
+        return datesList;
+    }
+
     async function loadAllGithubExcelFiles() {
         try {
             const pathSegments = window.location.pathname.split('/').filter(Boolean);
@@ -357,23 +384,8 @@
                 }
             }
 
-            // GitHub API 호출 제한 등에 대비한 확장된 파일 목록 (11월 11일 포함)
             if (filesToProcess.length === 0) {
-                filesToProcess = [
-                    "생산일일보고_주사침팀 260605.xlsx", "생산일일보고_주사침팀 260612.xlsx",
-                    "생산일일보고_주사침팀 260619, 20.xlsx", "생산일일보고_주사침팀 260626, 27.xlsx",
-                    "생산일일보고_주사침팀 260703.xlsx", "생산일일보고_주사침팀 260710.xlsx",
-                    "생산일일보고_주사침팀 260716.xlsx", "생산일일보고_주사침팀 260724.xlsx",
-                    "생산일일보고_주사침팀 260731.xlsx", "생산일일보고_주사침팀 260807.xlsx",
-                    "생산일일보고_주사침팀 260814.xlsx", "생산일일보고_주사침팀 260821.xlsx",
-                    "생산일일보고_주사침팀 260828.xlsx", "생산일일보고_주사침팀 260901.xlsx",
-                    "생산일일보고_주사침팀 260904.xlsx", "생산일일보고_주사침팀 260911.xlsx",
-                    "생산일일보고_주사침팀 260918.xlsx", "생산일일보고_주사침팀 260923.xlsx",
-                    "생산일일보고_주사침팀 261002.xlsx", "생산일일보고_주사침팀 261008.xlsx",
-                    "생산일일보고_주사침팀 261016.xlsx", "생산일일보고_주사침팀 261023.xlsx",
-                    "생산일일보고_주사침팀 261030.xlsx", "생산일일보고_주사침팀 261106.xlsx",
-                    "생산일일보고_주사침팀 261110.xlsx", "생산일일보고_주사침팀 261111.xlsx"
-                ];
+                filesToProcess = excelFileNames;
             }
 
             let rawCombined = [];
@@ -390,25 +402,52 @@
                     const worksheet = workbook.Sheets[firstSheetName];
                     const rawData = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ""});
                     
+                    let defaultDates = []; // 상단 헤더에서 파싱한 날짜 목록 (예: [2026-05-22, 2026-05-23, 2026-05-25])
                     let currentProdDate = ""; 
-                    let colIdx = { product: -1, process: -1, qty: -1, remark: -1 };
+                    let colIdx = { product: -1, process: -1, qty: -1, remark: -1, dateCol: -1 };
 
+                    // 1단계: 상단 생산일자 헤더 탐색
                     for (let i = 0; i < rawData.length; i++) {
                         let row = rawData[i].map(cell => String(cell).trim());
-
                         if (row.includes("생산일자")) {
                             let dIdx = row.indexOf("생산일자");
                             if (i + 1 < rawData.length) {
                                 let rawDateVal = rawData[i+1][dIdx];
                                 if (rawDateVal !== undefined && rawDateVal !== "") {
                                     if (rawDateVal instanceof Date) {
-                                        currentProdDate = `${rawDateVal.getFullYear()}-${String(rawDateVal.getMonth() + 1).padStart(2, '0')}-${String(rawDateVal.getDate()).padStart(2, '0')}`;
+                                        let y = rawDateVal.getFullYear();
+                                        let m = String(rawDateVal.getMonth() + 1).padStart(2, '0');
+                                        let d = String(rawDateVal.getDate()).padStart(2, '0');
+                                        currentProdDate = `${y}-${m}-${d}`;
+                                        defaultDates = [currentProdDate];
                                     } else {
-                                        currentProdDate = excelDateToJSDate(rawDateVal);
+                                        let parsedList = parseHeaderDates(rawDateVal);
+                                        if (parsedList.length > 0) {
+                                            defaultDates = parsedList;
+                                            currentProdDate = parsedList[0]; // 기본 첫 번째 날짜
+                                        } else {
+                                            currentProdDate = excelDateToJSDate(rawDateVal);
+                                            defaultDates = [currentProdDate];
+                                        }
                                     }
                                 }
                             }
+                            break;
                         }
+                    }
+
+                    // 만약 파일 이름에서도 날짜 유추 가능할 경우 보조 처리
+                    if (defaultDates.length === 0 && currentProdDate === "") {
+                        currentProdDate = "-";
+                        defaultDates = ["-"];
+                    }
+
+                    // 2단계: 테이블 본문 탐색 및 행별 날짜 추출
+                    let activeDate = currentProdDate;
+                    let lastValidDate = currentProdDate;
+
+                    for (let i = 0; i < rawData.length; i++) {
+                        let row = rawData[i].map(cell => String(cell).trim());
 
                         if (row.includes("제품명") && row.includes("공정")) {
                             colIdx.product = row.indexOf("제품명");
@@ -416,23 +455,43 @@
                             colIdx.qty = row.indexOf("생산수량");
                             colIdx.remark = row.indexOf("비고");
                             
+                            // 행의 맨 앞쪽(0번~2번 컬럼)에 날짜/요일 정보가 있는지 체크하기 위한 열 탐색
+                            // 예: "23일 (토)", "25일 (월)" 등
+                            
                             for (let j = i + 1; j < rawData.length; j++) {
                                 let dataRow = rawData[j];
                                 let pName = String(dataRow[colIdx.product] || "").trim();
                                 
+                                // 행의 맨 좌측 셀들에서 날짜 정보(예: "23일", "25일")가 있는지 확인
+                                for (let c = 0; c < Math.min(colIdx.product, dataRow.length); c++) {
+                                    let cellVal = String(dataRow[c] || "").trim();
+                                    if (cellVal.includes("일") || cellVal.includes("월") || cellVal.includes("화") || cellVal.includes("수") || cellVal.includes("목") || cellVal.includes("금") || cellVal.includes("토") || cellVal.includes("일")) {
+                                        // 예: "23일 (토)" 에서 숫자 추출
+                                        let dayMatch = cellVal.match(/(\d{1,2})일/);
+                                        if (dayMatch && defaultDates.length > 0) {
+                                            let targetDay = dayMatch[1].padStart(2, '0');
+                                            // defaultDates 중에서 해당 일이 포함된 날짜를 매칭
+                                            let matchedDate = defaultDates.find(dt => dt.endsWith(`-${targetDay}`));
+                                            if (matchedDate) {
+                                                activeDate = matchedDate;
+                                                lastValidDate = matchedDate;
+                                            }
+                                        }
+                                    }
+                                }
+
                                 if (!pName || pName === "제품명" || pName.includes("업무보고")) {
                                     if (pName.includes("생산 일일 업무보고")) {
+                                        // 새로운 블록 시작 시 날짜 재탐색
                                         for (let d = j; d < Math.min(j + 3, rawData.length); d++) {
-                                            for (let c = 0; c < rawData[d].length; c++) {
-                                                let val = rawData[d][c];
+                                            for (let col = 0; col < rawData[d].length; col++) {
+                                                let val = rawData[d][col];
                                                 if (val !== undefined && val !== "") {
-                                                    let sVal = String(val);
-                                                    if (sVal.includes("2026-") || sVal.includes("2025-") || !isNaN(val) && Number(val) > 40000) {
-                                                        if (val instanceof Date) {
-                                                            currentProdDate = `${val.getFullYear()}-${String(val.getMonth()+1).padStart(2,'0')}-${String(val.getDate()).padStart(2,'0')}`;
-                                                        } else {
-                                                            currentProdDate = excelDateToJSDate(val);
-                                                        }
+                                                    let parsed = parseHeaderDates(val);
+                                                    if (parsed.length > 0) {
+                                                        defaultDates = parsed;
+                                                        activeDate = parsed[0];
+                                                        lastValidDate = parsed[0];
                                                     }
                                                 }
                                             }
@@ -466,7 +525,7 @@
                                 let numericQty = !isNaN(cleanNum) ? cleanNum : 0;
 
                                 rawCombined.push({
-                                    "생산일자": currentProdDate || "-",
+                                    "생산일자": activeDate || lastValidDate || "-",
                                     "제품명": pName,
                                     "공정": cleanProcess || rawProcessStr,
                                     "로트": extractedLot || "-",
