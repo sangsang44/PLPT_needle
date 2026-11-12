@@ -2,7 +2,6 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <!-- 모바일 화면 최적화를 위한 뷰포트 설정 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>주사침 생산현황 통합 검색 대시보드</title>
     <!-- 엑셀 파일을 읽기 위한 라이브러리 (SheetJS) -->
@@ -12,66 +11,71 @@
             font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
             background-color: #f4f6f8;
             margin: 0;
-            padding: 10px;
+            padding: 20px;
             color: #333;
         }
         .container {
             max-width: 1400px;
             margin: 0 auto;
             background-color: #fff;
-            padding: 20px;
+            padding: 30px;
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         h1 {
             text-align: center;
             color: #2c3e50;
-            margin-bottom: 20px;
-            font-size: 24px;
+            margin-bottom: 25px;
         }
         
         /* 상단 안내 바 영역 */
         .top-info-bar {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             background-color: #eef2f5;
-            padding: 12px 15px;
+            padding: 15px 20px;
             border-radius: 8px;
             border: 1px solid #dcdde1;
-            font-size: 13px;
+            font-size: 14px;
             color: #2c3e50;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 5px;
         }
 
-        /* 검색 영역 스타일 (기본 PC: 가로 배치) */
-        .search-section, .input-search-section {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr) auto;
-            gap: 10px;
+        /* 검색 영역 스타일 (드롭다운) */
+        .search-section {
+            display: flex;
+            gap: 12px;
             margin-bottom: 0px;
             align-items: flex-end;
             background-color: #fcfcfc;
-            padding: 15px;
+            padding: 15px 20px;
             border: 1px solid #eee;
             border-radius: 8px 8px 0 0;
+            flex-wrap: wrap;
         }
+        /* 직접 입력 검색 영역 스타일 */
         .input-search-section {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            align-items: flex-end;
             background-color: #f8f9fa;
+            padding: 15px 20px;
+            border: 1px solid #eee;
             border-top: none;
             border-radius: 0 0 8px 8px;
-            margin-bottom: 15px;
+            flex-wrap: wrap;
         }
         .filter-group {
             display: flex;
             flex-direction: column;
-            gap: 4px;
-            width: 100%;
+            gap: 5px;
+            flex: 1;
+            min-width: 150px;
         }
         .filter-group label {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: bold;
             color: #555;
         }
@@ -86,10 +90,12 @@
         }
         .button-group {
             display: flex;
-            gap: 6px;
+            gap: 8px;
         }
-        .btn-search, .btn-reset {
-            padding: 10px 14px;
+        .btn-search {
+            padding: 10px 18px;
+            background-color: #3498db;
+            color: white;
             border: none;
             border-radius: 6px;
             cursor: pointer;
@@ -97,11 +103,20 @@
             font-weight: bold;
             transition: background-color 0.3s;
             height: 41px;
-            white-space: nowrap;
         }
-        .btn-search { background-color: #3498db; color: white; }
         .btn-search:hover { background-color: #2980b9; }
-        .btn-reset { background-color: #95a5a6; color: white; }
+        .btn-reset {
+            padding: 10px 18px;
+            background-color: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            height: 41px;
+        }
         .btn-reset:hover { background-color: #7f8c8d; }
 
         /* 테이블 및 합계 스타일 */
@@ -117,10 +132,9 @@
             white-space: nowrap;
         }
         th, td {
-            padding: 10px 12px;
+            padding: 12px 15px;
             text-align: left;
             border-bottom: 1px solid #ddd;
-            font-size: 14px;
         }
         th {
             background-color: #34495e;
@@ -143,23 +157,21 @@
             margin-top: 15px;
             background-color: #e8f8f5;
             border: 1px solid #a3e4d7;
-            padding: 12px 15px;
+            padding: 15px 20px;
             border-radius: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 15px;
+            font-size: 16px;
             font-weight: bold;
             color: #117a65;
-            flex-wrap: wrap;
-            gap: 5px;
         }
         .summary-value {
-            font-size: 18px;
+            font-size: 20px;
             color: #0e6251;
         }
 
-        /* 📱 모바일 자동 최적화 미디어 쿼리 (화면 폭 900px 이하인 스마트폰/태블릿) */
+        /* 📱 모바일 화면 최적화 (화면 폭 900px 이하일 때 자동 적용) */
         @media screen and (max-width: 900px) {
             body {
                 padding: 5px;
@@ -170,25 +182,37 @@
             h1 {
                 font-size: 20px;
             }
+            .top-info-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+                font-size: 12px;
+            }
             .search-section, .input-search-section {
-                grid-template-columns: 1fr; /* 모바일에서는 항목들이 세로로 꽉 차게 배치되어 터치하기 편함 */
-                gap: 8px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
                 padding: 12px;
+            }
+            .filter-group {
+                width: 100%;
             }
             .button-group {
                 width: 100%;
                 display: flex;
                 gap: 8px;
+                margin-top: 5px;
             }
             .button-group button {
-                flex: 1; /* 검색, 초기화 버튼이 가로로 화면을 반씩 나누어 꽉 참 */
+                flex: 1;
             }
             th, td {
-                padding: 8px 10px;
+                padding: 9px 10px;
                 font-size: 13px;
             }
             .summary-bar {
                 font-size: 14px;
+                padding: 12px 15px;
             }
             .summary-value {
                 font-size: 16px;
@@ -203,8 +227,8 @@
     
     <!-- 상단 안내 바 -->
     <div class="top-info-bar">
-        <span>📁 <strong>GitHub 저장소 연동 모드:</strong> 깃허브에 업로드된 엑셀 파일들을 자동으로 불러와 조회합니다.</span>
-        <span id="fileCountBadge" style="font-weight: bold; color: #2980b9;">엑셀 파일 로딩 중...</span>
+        <span>📁 <strong>GitHub 저장소 연동 모드:</strong> 저장소에 업로드된 모든 엑셀 파일(.xlsx)을 자동으로 감지하여 통합 조회합니다.</span>
+        <span id="fileCountBadge" style="font-weight: bold; color: #2980b9;">엑셀 파일 스캔 중...</span>
     </div>
 
     <!-- 1단: 드롭다운 선택 검색 영역 -->
@@ -249,7 +273,7 @@
     <div class="input-search-section">
         <div class="filter-group">
             <label>생산일자 (직접 입력)</label>
-            <input type="text" id="inputDate" placeholder="일자 입력">
+            <input type="text" id="inputDate" placeholder="일자 입력 (예: 2026-11)">
         </div>
 
         <div class="filter-group">
@@ -308,145 +332,177 @@
 <script>
     let globalData = [];     
 
-    const excelFileNames = [
-        "생산일일보고_주사침팀 260605.xlsx", "생산일일보고_주사침팀 260612.xlsx",
-        "생산일일보고_주사침팀 260619, 20.xlsx", "생산일일보고_주사침팀 260626, 27.xlsx",
-        "생산일일보고_주사침팀 260703.xlsx", "생산일일보고_주사침팀 260710.xlsx",
-        "생산일일보고_주사침팀 260716.xlsx", "생산일일보고_주사침팀 260724.xlsx",
-        "생산일일보고_주사침팀 260731.xlsx", "생산일일보고_주사침팀 260807.xlsx",
-        "생산일일보고_주사침팀 260814.xlsx", "생산일일보고_주사침팀 260821.xlsx",
-        "생산일일보고_주사침팀 260828.xlsx", "생산일일보고_주사침팀 260901.xlsx",
-        "생산일일보고_주사침팀 260904.xlsx", "생산일일보고_주사침팀 260911.xlsx",
-        "생산일일보고_주사침팀 260918.xlsx", "생산일일보고_주사침팀 260923.xlsx",
-        "생산일일보고_주사침팀 261002.xlsx", "생산일일보고_주사침팀 261008.xlsx",
-        "생산일일보고_주사침팀 261016.xlsx", "생산일일보고_주사침팀 261023.xlsx",
-        "생산일일보고_주사침팀 261030.xlsx", "생산일일보고_주사침팀 261106.xlsx",
-        "생산일일보고_주사침팀 261110.xlsx", "생산일일보고_주사침팀 261111.xlsx"
-    ];
+    // GitHub API를 활용해 저장소의 모든 파일을 자동 스캔하고, 실패 시 최신 날짜까지 포함된 목록으로 자동 대응
+    async function loadAllGithubExcelFiles() {
+        try {
+            const pathSegments = window.location.pathname.split('/').filter(Boolean);
+            let owner = "";
+            let repo = "";
 
-    window.onload = function() {
-        loadGithubExcelFiles();
-    };
+            if (window.location.hostname.includes("github.io")) {
+                owner = window.location.hostname.split('.')[0];
+                repo = pathSegments.length > 0 ? pathSegments[0] : "";
+            }
 
-    async function loadGithubExcelFiles() {
-        let rawCombined = [];
-        let loadedCount = 0;
+            let filesToProcess = [];
 
-        for (let fileName of excelFileNames) {
-            try {
-                let res = await fetch(fileName);
-                if (!res.ok) continue;
-                let buffer = await res.arrayBuffer();
-                
-                const workbook = XLSX.read(new Uint8Array(buffer), {type: 'array', cellDates: true});
-                const firstSheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[firstSheetName];
-                const rawData = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ""});
-                
-                let currentProdDate = ""; 
-                let colIdx = { product: -1, process: -1, qty: -1, remark: -1 };
+            if (owner && repo) {
+                let apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents`;
+                let response = await fetch(apiUrl);
+                if (response.ok) {
+                    let repoContents = await response.json();
+                    filesToProcess = repoContents
+                        .filter(item => item.type === 'file' && item.name.endsWith('.xlsx') && item.name.includes('생산일일보고'))
+                        .map(item => item.name);
+                }
+            }
 
-                for (let i = 0; i < rawData.length; i++) {
-                    let row = rawData[i].map(cell => String(cell).trim());
+            // GitHub API 호출 제한 등에 대비한 확장된 파일 목록 (11월 11일 포함)
+            if (filesToProcess.length === 0) {
+                filesToProcess = [
+                    "생산일일보고_주사침팀 260605.xlsx", "생산일일보고_주사침팀 260612.xlsx",
+                    "생산일일보고_주사침팀 260619, 20.xlsx", "생산일일보고_주사침팀 260626, 27.xlsx",
+                    "생산일일보고_주사침팀 260703.xlsx", "생산일일보고_주사침팀 260710.xlsx",
+                    "생산일일보고_주사침팀 260716.xlsx", "생산일일보고_주사침팀 260724.xlsx",
+                    "생산일일보고_주사침팀 260731.xlsx", "생산일일보고_주사침팀 260807.xlsx",
+                    "생산일일보고_주사침팀 260814.xlsx", "생산일일보고_주사침팀 260821.xlsx",
+                    "생산일일보고_주사침팀 260828.xlsx", "생산일일보고_주사침팀 260901.xlsx",
+                    "생산일일보고_주사침팀 260904.xlsx", "생산일일보고_주사침팀 260911.xlsx",
+                    "생산일일보고_주사침팀 260918.xlsx", "생산일일보고_주사침팀 260923.xlsx",
+                    "생산일일보고_주사침팀 261002.xlsx", "생산일일보고_주사침팀 261008.xlsx",
+                    "생산일일보고_주사침팀 261016.xlsx", "생산일일보고_주사침팀 261023.xlsx",
+                    "생산일일보고_주사침팀 261030.xlsx", "생산일일보고_주사침팀 261106.xlsx",
+                    "생산일일보고_주사침팀 261110.xlsx", "생산일일보고_주사침팀 261111.xlsx"
+                ];
+            }
 
-                    if (row.includes("생산일자")) {
-                        let dIdx = row.indexOf("생산일자");
-                        if (i + 1 < rawData.length) {
-                            let rawDateVal = rawData[i+1][dIdx];
-                            if (rawDateVal !== undefined && rawDateVal !== "") {
-                                if (rawDateVal instanceof Date) {
-                                    currentProdDate = `${rawDateVal.getFullYear()}-${String(rawDateVal.getMonth() + 1).padStart(2, '0')}-${String(rawDateVal.getDate()).padStart(2, '0')}`;
-                                } else {
-                                    currentProdDate = excelDateToJSDate(rawDateVal);
+            let rawCombined = [];
+            let loadedCount = 0;
+
+            for (let fileName of filesToProcess) {
+                try {
+                    let res = await fetch(fileName);
+                    if (!res.ok) continue;
+                    let buffer = await res.arrayBuffer();
+                    
+                    const workbook = XLSX.read(new Uint8Array(buffer), {type: 'array', cellDates: true});
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const rawData = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ""});
+                    
+                    let currentProdDate = ""; 
+                    let colIdx = { product: -1, process: -1, qty: -1, remark: -1 };
+
+                    for (let i = 0; i < rawData.length; i++) {
+                        let row = rawData[i].map(cell => String(cell).trim());
+
+                        if (row.includes("생산일자")) {
+                            let dIdx = row.indexOf("생산일자");
+                            if (i + 1 < rawData.length) {
+                                let rawDateVal = rawData[i+1][dIdx];
+                                if (rawDateVal !== undefined && rawDateVal !== "") {
+                                    if (rawDateVal instanceof Date) {
+                                        currentProdDate = `${rawDateVal.getFullYear()}-${String(rawDateVal.getMonth() + 1).padStart(2, '0')}-${String(rawDateVal.getDate()).padStart(2, '0')}`;
+                                    } else {
+                                        currentProdDate = excelDateToJSDate(rawDateVal);
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    if (row.includes("제품명") && row.includes("공정")) {
-                        colIdx.product = row.indexOf("제품명");
-                        colIdx.process = row.indexOf("공정");
-                        colIdx.qty = row.indexOf("생산수량");
-                        colIdx.remark = row.indexOf("비고");
-                        
-                        for (let j = i + 1; j < rawData.length; j++) {
-                            let dataRow = rawData[j];
-                            let pName = String(dataRow[colIdx.product] || "").trim();
+                        if (row.includes("제품명") && row.includes("공정")) {
+                            colIdx.product = row.indexOf("제품명");
+                            colIdx.process = row.indexOf("공정");
+                            colIdx.qty = row.indexOf("생산수량");
+                            colIdx.remark = row.indexOf("비고");
                             
-                            if (!pName || pName === "제품명" || pName.includes("업무보고")) {
-                                if (pName.includes("생산 일일 업무보고")) {
-                                    for (let d = j; d < Math.min(j + 3, rawData.length); d++) {
-                                        for (let c = 0; c < rawData[d].length; c++) {
-                                            let val = rawData[d][c];
-                                            if (val !== undefined && val !== "") {
-                                                let sVal = String(val);
-                                                if (sVal.includes("2026-") || sVal.includes("2025-") || !isNaN(val) && Number(val) > 40000) {
-                                                    if (val instanceof Date) {
-                                                        currentProdDate = `${val.getFullYear()}-${String(val.getMonth()+1).padStart(2,'0')}-${String(val.getDate()).padStart(2,'0')}`;
-                                                    } else {
-                                                        currentProdDate = excelDateToJSDate(val);
+                            for (let j = i + 1; j < rawData.length; j++) {
+                                let dataRow = rawData[j];
+                                let pName = String(dataRow[colIdx.product] || "").trim();
+                                
+                                if (!pName || pName === "제품명" || pName.includes("업무보고")) {
+                                    if (pName.includes("생산 일일 업무보고")) {
+                                        for (let d = j; d < Math.min(j + 3, rawData.length); d++) {
+                                            for (let c = 0; c < rawData[d].length; c++) {
+                                                let val = rawData[d][c];
+                                                if (val !== undefined && val !== "") {
+                                                    let sVal = String(val);
+                                                    if (sVal.includes("2026-") || sVal.includes("2025-") || !isNaN(val) && Number(val) > 40000) {
+                                                        if (val instanceof Date) {
+                                                            currentProdDate = `${val.getFullYear()}-${String(val.getMonth()+1).padStart(2,'0')}-${String(val.getDate()).padStart(2,'0')}`;
+                                                        } else {
+                                                            currentProdDate = excelDateToJSDate(val);
+                                                        }
                                                     }
                                                 }
                                             }
                                         }
                                     }
+                                    continue;
                                 }
-                                continue;
-                            }
 
-                            if (pName === "특이사항") continue;
+                                if (pName === "특이사항") continue;
 
-                            let rawProcessStr = String(dataRow[colIdx.process] || "").trim();
-                            let qty = String(dataRow[colIdx.qty] || "").trim();
-                            let remark = String(dataRow[colIdx.remark] || "").trim();
+                                let rawProcessStr = String(dataRow[colIdx.process] || "").trim();
+                                let qty = String(dataRow[colIdx.qty] || "").trim();
+                                let remark = String(dataRow[colIdx.remark] || "").trim();
 
-                            let cleanProcess = rawProcessStr;
-                            let extractedLot = "";
+                                let cleanProcess = rawProcessStr;
+                                let extractedLot = "";
 
-                            let lotMatch = rawProcessStr.match(/\((?:로트\s*[:]?)\s*([^)]+)\)/i);
-                            if (lotMatch) {
-                                extractedLot = lotMatch[1].trim();
-                                cleanProcess = rawProcessStr.replace(lotMatch[0], "").trim();
-                            } else {
-                                let parts = rawProcessStr.split(/로트[:\s]*/);
-                                if (parts.length > 1) {
-                                    cleanProcess = parts[0].trim();
-                                    extractedLot = parts[1].replace(/[()]/g, "").trim();
+                                let lotMatch = rawProcessStr.match(/\((?:로트\s*[:]?)\s*([^)]+)\)/i);
+                                if (lotMatch) {
+                                    extractedLot = lotMatch[1].trim();
+                                    cleanProcess = rawProcessStr.replace(lotMatch[0], "").trim();
+                                } else {
+                                    let parts = rawProcessStr.split(/로트[:\s]*/);
+                                    if (parts.length > 1) {
+                                        cleanProcess = parts[0].trim();
+                                        extractedLot = parts[1].replace(/[()]/g, "").trim();
+                                    }
                                 }
+
+                                let cleanNum = Number(String(qty).replace(/[^0-9.-]+/g,""));
+                                let numericQty = !isNaN(cleanNum) ? cleanNum : 0;
+
+                                rawCombined.push({
+                                    "생산일자": currentProdDate || "-",
+                                    "제품명": pName,
+                                    "공정": cleanProcess || rawProcessStr,
+                                    "로트": extractedLot || "-",
+                                    "생산수량": numericQty,
+                                    "비고": remark
+                                });
                             }
-
-                            let cleanNum = Number(String(qty).replace(/[^0-9.-]+/g,""));
-                            let numericQty = !isNaN(cleanNum) ? cleanNum : 0;
-
-                            rawCombined.push({
-                                "생산일자": currentProdDate || "-",
-                                "제품명": pName,
-                                "공정": cleanProcess || rawProcessStr,
-                                "로트": extractedLot || "-",
-                                "생산수량": numericQty,
-                                "비고": remark
-                            });
                         }
                     }
+                    loadedCount++;
+                } catch(err) {
+                    console.error("파일 로드 실패:", fileName);
                 }
-                loadedCount++;
-            } catch(err) {
-                console.error("파일 로드 실패:", fileName);
             }
+
+            let uniqueMap = new Map();
+            rawCombined.forEach(item => {
+                let key = `${item['생산일자']}_${item['제품명']}_${item['공정']}_${item['로트']}_${item['생산수량']}_${item['비고']}`;
+                uniqueMap.set(key, item);
+            });
+            globalData = Array.from(uniqueMap.values());
+            globalData.sort((a, b) => b['생산일자'].localeCompare(a['생산일자']));
+
+            document.getElementById('fileCountBadge').textContent = `자동 연동된 파일: ${loadedCount}개`;
+            updateDropdownOptions();
+            renderTable(globalData);
+
+        } catch (e) {
+            console.error("자동 파일 스캔 오류:", e);
+            document.getElementById('fileCountBadge').textContent = `파일 연동 오류 발생`;
         }
-
-        let uniqueMap = new Map();
-        rawCombined.forEach(item => {
-            let key = `${item['생산일자']}_${item['제품명']}_${item['공정']}_${item['로트']}_${item['생산수량']}_${item['비고']}`;
-            uniqueMap.set(key, item);
-        });
-        globalData = Array.from(uniqueMap.values());
-        globalData.sort((a, b) => b['생산일자'].localeCompare(a['생산일자']));
-
-        document.getElementById('fileCountBadge').textContent = `연동된 파일: ${loadedCount}개`;
-        updateDropdownOptions();
-        renderTable(globalData);
     }
+
+    window.onload = function() {
+        loadAllGithubExcelFiles();
+    };
 
     function excelDateToJSDate(serial) {
         if (!isNaN(serial) && serial > 30000) {
