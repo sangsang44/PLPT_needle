@@ -256,4 +256,100 @@
 
         <div class="filter-group">
             <label>로트 번호 (선택)</label>
-            <select id="searchLot
+            <select id="searchLot" onchange="updateDropdownOptions()">
+                <option value="">전체 로트</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label>비고/상태 (선택)</label>
+            <select id="searchRemark">
+                <option value="">전체 상태</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- 2단: 직접 입력 검색 영역 -->
+    <div class="input-search-section">
+        <div class="filter-group">
+            <label>생산일자 (직접 입력)</label>
+            <input type="text" id="inputDate" placeholder="일자 또는 요일 입력 (예: 2026-11 또는 수)">
+        </div>
+
+        <div class="filter-group">
+            <label>제품명 (직접 입력)</label>
+            <input type="text" id="inputProduct" placeholder="제품명 입력">
+        </div>
+        
+        <div class="filter-group">
+            <label>공정명 (직접 입력)</label>
+            <input type="text" id="inputProcess" placeholder="공정명 입력">
+        </div>
+
+        <div class="filter-group">
+            <label>로트 번호 (직접 입력)</label>
+            <input type="text" id="inputLot" placeholder="로트 입력">
+        </div>
+        
+        <div class="filter-group">
+            <label>비고/상태 (직접 입력)</label>
+            <input type="text" id="inputRemark" placeholder="상태 입력">
+        </div>
+
+        <div class="button-group">
+            <button class="btn-search" onclick="filterData()">검색</button>
+            <button class="btn-reset" onclick="resetSearch()">초기화</button>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th>생산일자</th>
+                    <th>제품명</th>
+                    <th>공정</th>
+                    <th>로트</th>
+                    <th class="text-right">생산수량</th>
+                    <th>비고</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="6" class="empty-message">깃허브 저장소에서 데이터를 불러오는 중입니다...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 생산수량 합계 표시 바 -->
+    <div class="summary-bar">
+        <span>🔍 검색된 조건의 생산현황 요약</span>
+        <span class="summary-value" id="totalQtySum">0건 / 0 EA</span>
+    </div>
+</div>
+
+<script>
+    let globalData = [];     
+
+    // GitHub API를 활용해 저장소의 모든 파일을 자동 스캔하고, 실패 시 최신 날짜까지 포함된 목록으로 자동 대응
+    async function loadAllGithubExcelFiles() {
+        try {
+            const pathSegments = window.location.pathname.split('/').filter(Boolean);
+            let owner = "";
+            let repo = "";
+
+            if (window.location.hostname.includes("github.io")) {
+                owner = window.location.hostname.split('.')[0];
+                repo = pathSegments.length > 0 ? pathSegments[0] : "";
+            }
+
+            let filesToProcess = [];
+
+            if (owner && repo) {
+                let apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents`;
+                let response = await fetch(apiUrl);
+                if (response.ok) {
+                    let repoContents = await response.json();
+                    filesToProcess = repoContents
+                        .filter(item => item.type === 'file' && item.name.endsWith('.xlsx
