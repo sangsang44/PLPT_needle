@@ -72,7 +72,7 @@
             flex-direction: column;
             gap: 5px;
             flex: 1;
-            min-width: 150px;
+            min-width: 130px;
         }
         .filter-group label {
             font-size: 13px;
@@ -262,8 +262,15 @@
         </div>
         
         <div class="filter-group">
-            <label>비고/상태 (선택)</label>
-            <select id="searchRemark">
+            <label>비고 (선택)</label>
+            <select id="searchRemark" onchange="updateDropdownOptions()">
+                <option value="">전체 비고</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label>상태 (선택)</label>
+            <select id="searchStatus" onchange="updateDropdownOptions()">
                 <option value="">전체 상태</option>
             </select>
         </div>
@@ -292,8 +299,13 @@
         </div>
         
         <div class="filter-group">
-            <label>비고/상태 (직접 입력)</label>
-            <input type="text" id="inputRemark" placeholder="상태 입력">
+            <label>비고 (직접 입력)</label>
+            <input type="text" id="inputRemark" placeholder="비고 입력">
+        </div>
+
+        <div class="filter-group">
+            <label>상태 (직접 입력)</label>
+            <input type="text" id="inputStatus" placeholder="상태 입력 (예: 완료)">
         </div>
 
         <div class="button-group">
@@ -312,11 +324,12 @@
                     <th>로트</th>
                     <th class="text-right">생산수량</th>
                     <th>비고</th>
+                    <th>상태</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td colspan="6" class="empty-message">깃허브 저장소에서 데이터를 불러오는 중입니다...</td>
+                    <td colspan="7" class="empty-message">깃허브 저장소에서 데이터를 불러오는 중입니다...</td>
                 </tr>
             </tbody>
         </table>
@@ -394,7 +407,7 @@
                     const rawData = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ""});
                     
                     let currentProdDate = ""; 
-                    let colIdx = { product: -1, process: -1, lot: -1, qty: -1, remark: -1 };
+                    let colIdx = { product: -1, process: -1, lot: -1, qty: -1, remark: -1, status: -1 };
 
                     for (let i = 0; i < rawData.length; i++) {
                         let row = rawData[i].map(cell => String(cell).trim());
@@ -429,6 +442,7 @@
                             colIdx.lot = row.indexOf("로트");
                             colIdx.qty = row.indexOf("생산수량");
                             colIdx.remark = row.indexOf("비고");
+                            colIdx.status = row.indexOf("상태");
                             
                             for (let j = i + 1; j < rawData.length; j++) {
                                 let dataRow = rawData[j];
@@ -459,7 +473,8 @@
 
                                 let rawProcessStr = String(dataRow[colIdx.process] || "").trim();
                                 let qty = String(dataRow[colIdx.qty] || "").trim();
-                                let remark = String(dataRow[colIdx.remark] || "").trim();
+                                let rawRemark = colIdx.remark !== -1 ? String(dataRow[colIdx.remark] || "").trim() : "";
+                                let rawStatus = colIdx.status !== -1 ? String(dataRow[colIdx.status] || "").trim() : "";
 
                                 let cleanProcess = rawProcessStr;
                                 let extractedLot = (colIdx.lot !== -1 && dataRow[colIdx.lot] !== undefined) ? String(dataRow[colIdx.lot]).trim() : "";
@@ -476,6 +491,21 @@
                                     }
                                 }
 
+                                // [비고 / 상태 분리 로직]
+                                // 1. 비고 또는 상태 칸에 '완료'가 포함되어 있으면 상태는 '완료'로 설정
+                                let finalStatus = "";
+                                if (rawRemark.includes("완료") || rawStatus.includes("완료")) {
+                                    finalStatus = "완료";
+                                }
+
+                                // 2. 비고에서는 '완료' 글자(및 빈 괄호)를 제거하고 나머지 텍스트만 남김
+                                let finalRemark = rawRemark
+                                    .replace(/\(\s*완료\s*\)/g, "")
+                                    .replace(/\[\s*완료\s*\]/g, "")
+                                    .replace(/완료/g, "")
+                                    .replace(/^[\s,\/-]+|[\s,\/-]+$/g, "")
+                                    .trim();
+
                                 let cleanNum = Number(String(qty).replace(/[^0-9.-]+/g,""));
                                 let numericQty = !isNaN(cleanNum) ? cleanNum : 0;
 
@@ -485,7 +515,8 @@
                                     "공정": cleanProcess || rawProcessStr,
                                     "로트": extractedLot || "-",
                                     "생산수량": numericQty,
-                                    "비고": remark
+                                    "비고": finalRemark,
+                                    "상태": finalStatus
                                 });
                             }
                         }
@@ -498,7 +529,7 @@
 
             let uniqueMap = new Map();
             rawCombined.forEach(item => {
-                let key = `${item['생산일자']}_${item['제품명']}_${item['공정']}_${item['로트']}_${item['생산수량']}_${item['비고']}`;
+                let key = `${item['생산일자']}_${item['제품명']}_${item['공정']}_${item['로트']}_${item['생산수량']}_${item['비고']}_${item['상태']}`;
                 uniqueMap.set(key, item);
             });
             globalData = Array.from(uniqueMap.values());
@@ -673,12 +704,14 @@
         const selProcess = document.getElementById('searchProcess');
         const selLot = document.getElementById('searchLot');
         const selRemark = document.getElementById('searchRemark');
+        const selStatus = document.getElementById('searchStatus');
 
         const curDate = selDate.value;
         const curProd = selProduct.value;
         const curProc = selProcess.value;
         const curLot = selLot.value;
         const curRem = selRemark.value;
+        const curStat = selStatus.value;
 
         let filterForDropdown = (targetField) => {
             return globalData.filter(row => {
@@ -687,6 +720,7 @@
                 if (targetField !== '공정' && curProc && row['공정'] !== curProc) return false;
                 if (targetField !== '로트' && curLot && row['로트'] !== curLot) return false;
                 if (targetField !== '비고' && curRem && row['비고'] !== curRem) return false;
+                if (targetField !== '상태' && curStat && row['상태'] !== curStat) return false;
                 return true;
             });
         };
@@ -706,11 +740,13 @@
         let processes = [...new Set(filterForDropdown('공정').map(r => r['공정']))].filter(v => v);
         let lots = [...new Set(filterForDropdown('로트').map(r => r['로트']))].filter(v => v && v !== '-');
         let remarks = [...new Set(filterForDropdown('비고').map(r => r['비고']))].filter(v => v);
+        let statuses = [...new Set(filterForDropdown('상태').map(r => r['상태']))].filter(v => v);
 
         products.sort();
         processes.sort();
         lots.sort();
         remarks.sort();
+        statuses.sort();
 
         let updateSelectHtml = (element, list, defaultText, currentValue) => {
             element.innerHTML = `<option value="">${defaultText}</option>`;
@@ -723,7 +759,8 @@
         updateSelectHtml(selProduct, products, '전체 제품명', curProd);
         updateSelectHtml(selProcess, processes, '전체 공정', curProc);
         updateSelectHtml(selLot, lots, '전체 로트', curLot);
-        updateSelectHtml(selRemark, remarks, '전체 상태', curRem);
+        updateSelectHtml(selRemark, remarks, '전체 비고', curRem);
+        updateSelectHtml(selStatus, statuses, '전체 상태', curStat);
     }
 
     function filterData() {
@@ -734,12 +771,14 @@
         const sProcess = document.getElementById('searchProcess').value;
         const sLot = document.getElementById('searchLot').value;
         const sRemark = document.getElementById('searchRemark').value;
+        const sStatus = document.getElementById('searchStatus').value;
 
         const iDate = document.getElementById('inputDate').value.toLowerCase().trim();
         const iProduct = document.getElementById('inputProduct').value.toLowerCase().trim();
         const iProcess = document.getElementById('inputProcess').value.toLowerCase().trim();
         const iLot = document.getElementById('inputLot').value.toLowerCase().trim();
         const iRemark = document.getElementById('inputRemark').value.toLowerCase().trim();
+        const iStatus = document.getElementById('inputStatus').value.toLowerCase().trim();
 
         const filtered = globalData.filter(row => {
             if (sDate && row['생산일자'] !== sDate) return false;
@@ -747,6 +786,7 @@
             if (sProcess && row['공정'] !== sProcess) return false;
             if (sLot && row['로트'] !== sLot) return false;
             if (sRemark && row['비고'] !== sRemark) return false;
+            if (sStatus && row['상태'] !== sStatus) return false;
 
             // 직접 입력 날짜 검색 (날짜 문자열뿐만 아니라 요일명(예: 수, 수요일 등)으로도 검색 가능)
             if (iDate) {
@@ -759,6 +799,7 @@
             if (iProcess && !row['공정'].toLowerCase().includes(iProcess)) return false;
             if (iLot && !row['로트'].toLowerCase().includes(iLot)) return false;
             if (iRemark && !row['비고'].toLowerCase().includes(iRemark)) return false;
+            if (iStatus && !row['상태'].toLowerCase().includes(iStatus)) return false;
 
             return true;
         });
@@ -772,12 +813,14 @@
         document.getElementById('searchProcess').value = "";
         document.getElementById('searchLot').value = "";
         document.getElementById('searchRemark').value = "";
+        document.getElementById('searchStatus').value = "";
 
         document.getElementById('inputDate').value = "";
         document.getElementById('inputProduct').value = "";
         document.getElementById('inputProcess').value = "";
         document.getElementById('inputLot').value = "";
         document.getElementById('inputRemark').value = "";
+        document.getElementById('inputStatus').value = "";
 
         updateDropdownOptions();
         renderTable(globalData);
@@ -791,7 +834,7 @@
         let totalCount = data.length; // 검색된 총 건수
 
         if (totalCount === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="empty-message">조건에 맞는 데이터가 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-message">조건에 맞는 데이터가 없습니다.</td></tr>';
             document.getElementById('totalQtySum').textContent = '0건 / 0 EA';
             return;
         }
@@ -811,6 +854,7 @@
                 <td><span style="background:#eef2f5; padding:3px 8px; border-radius:4px; font-family:monospace;">${row['로트']}</span></td>
                 <td class="text-right"><strong>${formattedQty}</strong></td>
                 <td>${row['비고']}</td>
+                <td>${row['상태']}</td>
             `;
             tbody.appendChild(tr);
         });
