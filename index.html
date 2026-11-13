@@ -520,6 +520,49 @@
         return str;
     }
 
+    // 날짜에 요일(월~일) 추가 및 공휴일/주말 색상 처리를 위한 헬퍼 함수
+    function formatDateWithDayAndColor(dateStr) {
+        if (!dateStr || dateStr === '-') return { text: '-', color: 'inherit' };
+        
+        let parts = dateStr.split('-');
+        if (parts.length !== 3) return { text: dateStr, color: 'inherit' };
+
+        let year = Number(parts[0]);
+        let month = Number(parts[1]);
+        let day = Number(parts[2]);
+
+        let dateObj = new Date(year, month - 1, day);
+        if (isNaN(dateObj.getTime())) return { text: dateStr, color: 'inherit' };
+
+        const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
+        let dayOfWeek = weekDays[dateObj.getDay()];
+        let formattedText = `${dateStr} ${dayOfWeek}`;
+
+        // 대한민국 고정 공휴일 정의 (월-일 형식)
+        const fixedHolidays = [
+            "01-01", // 신정
+            "03-01", // 삼일절
+            "05-05", // 어린이날
+            "06-06", // 현충일
+            "08-15", // 광복절
+            "10-03", // 개천절
+            "10-09", // 한글날
+            "12-25"  // 크리스마스
+        ];
+        let mmDd = String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+
+        let color = 'inherit';
+        let dayNum = dateObj.getDay(); // 0: 일요일, 6: 토요일
+
+        if (dayNum === 0 || fixedHolidays.includes(mmDd)) {
+            color = '#e74c3c'; // 일요일 및 공휴일: 빨간색
+        } else if (dayNum === 6) {
+            color = '#3498db'; // 토요일: 파란색
+        }
+
+        return { text: formattedText, color: color };
+    }
+
     function updateDropdownOptions() {
         if (globalData.length === 0) return;
 
@@ -641,10 +684,11 @@
         sortedData.forEach(row => {
             sumQty += row['생산수량'];
             let formattedQty = row['생산수량'].toLocaleString();
+            let dateInfo = formatDateWithDayAndColor(row['생산일자']);
 
             let tr = document.createElement('tr');
             tr.innerHTML = `
-                <td class="text-center">${row['생산일자']}</td>
+                <td class="text-center" style="color: ${dateInfo.color}; font-weight: bold;">${dateInfo.text}</td>
                 <td><strong>${row['제품명']}</strong></td>
                 <td>${row['공정']}</td>
                 <td><span style="background:#eef2f5; padding:3px 8px; border-radius:4px; font-family:monospace;">${row['로트']}</span></td>
