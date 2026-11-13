@@ -15,7 +15,7 @@
             color: #333;
         }
         .container {
-            max-width: 1400px;
+            max-width: 1500px;
             margin: 0 auto;
             background-color: #fff;
             padding: 30px;
@@ -72,7 +72,7 @@
             flex-direction: column;
             gap: 5px;
             flex: 1;
-            min-width: 150px;
+            min-width: 140px;
         }
         .filter-group label {
             font-size: 13px;
@@ -91,6 +91,7 @@
         .button-group {
             display: flex;
             gap: 8px;
+            padding-bottom: 2px;
         }
         .btn-search {
             padding: 10px 18px;
@@ -103,6 +104,7 @@
             font-weight: bold;
             transition: background-color 0.3s;
             height: 41px;
+            white-space: nowrap;
         }
         .btn-search:hover { background-color: #2980b9; }
         .btn-reset {
@@ -116,6 +118,7 @@
             font-weight: bold;
             transition: background-color 0.3s;
             height: 41px;
+            white-space: nowrap;
         }
         .btn-reset:hover { background-color: #7f8c8d; }
 
@@ -151,6 +154,14 @@
         }
         .text-center { text-align: center; }
         .text-right { text-align: right; }
+        .status-badge {
+            background-color: #2ecc71;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
 
         /* 합계 강조 바 스타일 */
         .summary-bar {
@@ -171,52 +182,19 @@
             color: #0e6251;
         }
 
-        /* 📱 모바일 화면 최적화 (화면 폭 900px 이하일 때 자동 적용) */
-        @media screen and (max-width: 900px) {
-            body {
-                padding: 5px;
-            }
-            .container {
-                padding: 12px;
-            }
-            h1 {
-                font-size: 20px;
-            }
-            .top-info-bar {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 5px;
-                font-size: 12px;
-            }
-            .search-section, .input-search-section {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-                padding: 12px;
-            }
-            .filter-group {
-                width: 100%;
-            }
-            .button-group {
-                width: 100%;
-                display: flex;
-                gap: 8px;
-                margin-top: 5px;
-            }
-            .button-group button {
-                flex: 1;
-            }
-            th, td {
-                padding: 9px 10px;
-                font-size: 13px;
-            }
-            .summary-bar {
-                font-size: 14px;
-                padding: 12px 15px;
-            }
-            .summary-value {
-                font-size: 16px;
-            }
+        /* 📱 모바일 화면 최적화 */
+        @media screen and (max-width: 1100px) {
+            body { padding: 5px; }
+            .container { padding: 12px; }
+            h1 { font-size: 20px; }
+            .top-info-bar { flex-direction: column; align-items: flex-start; gap: 5px; font-size: 12px; }
+            .search-section, .input-search-section { flex-direction: column; gap: 10px; padding: 12px; }
+            .filter-group { width: 100%; }
+            .button-group { width: 100%; display: flex; gap: 8px; margin-top: 5px; }
+            .button-group button { flex: 1; }
+            th, td { padding: 9px 10px; font-size: 13px; }
+            .summary-bar { font-size: 14px; padding: 12px 15px; }
+            .summary-value { font-size: 16px; }
         }
     </style>
 </head>
@@ -239,32 +217,28 @@
                 <option value="">전체 일자</option>
             </select>
         </div>
-
         <div class="filter-group">
             <label>제품명 (선택)</label>
             <select id="searchProduct" onchange="updateDropdownOptions()">
                 <option value="">전체 제품명</option>
             </select>
         </div>
-        
         <div class="filter-group">
             <label>공정명 (선택)</label>
             <select id="searchProcess" onchange="updateDropdownOptions()">
                 <option value="">전체 공정</option>
             </select>
         </div>
-
         <div class="filter-group">
             <label>로트 번호 (선택)</label>
             <select id="searchLot" onchange="updateDropdownOptions()">
                 <option value="">전체 로트</option>
             </select>
         </div>
-        
         <div class="filter-group">
-            <label>비고/상태 (선택)</label>
+            <label>비고 (선택)</label>
             <select id="searchRemark">
-                <option value="">전체 상태</option>
+                <option value="">전체 비고</option>
             </select>
         </div>
     </div>
@@ -273,29 +247,29 @@
     <div class="input-search-section">
         <div class="filter-group">
             <label>생산일자 (직접 입력)</label>
-            <input type="text" id="inputDate" placeholder="일자 또는 요일 입력 (예: 2026-11 또는 수)">
+            <input type="text" id="inputDate" placeholder="일자/요일 (예: 수)">
         </div>
-
         <div class="filter-group">
             <label>제품명 (직접 입력)</label>
             <input type="text" id="inputProduct" placeholder="제품명 입력">
         </div>
-        
         <div class="filter-group">
             <label>공정명 (직접 입력)</label>
             <input type="text" id="inputProcess" placeholder="공정명 입력">
         </div>
-
         <div class="filter-group">
             <label>로트 번호 (직접 입력)</label>
             <input type="text" id="inputLot" placeholder="로트 입력">
         </div>
-        
         <div class="filter-group">
-            <label>비고/상태 (직접 입력)</label>
-            <input type="text" id="inputRemark" placeholder="상태 입력">
+            <label>비고 (직접 입력)</label>
+            <input type="text" id="inputRemark" placeholder="비고 입력">
         </div>
-
+        <div class="filter-group">
+            <label>상태 (직접 입력)</label>
+            <input type="text" id="inputStatus" placeholder="상태 입력 (예: 완료)">
+        </div>
+        
         <div class="button-group">
             <button class="btn-search" onclick="filterData()">검색</button>
             <button class="btn-reset" onclick="resetSearch()">초기화</button>
@@ -312,11 +286,12 @@
                     <th>로트</th>
                     <th class="text-right">생산수량</th>
                     <th>비고</th>
+                    <th class="text-center">상태</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td colspan="6" class="empty-message">깃허브 저장소에서 데이터를 불러오는 중입니다...</td>
+                    <td colspan="7" class="empty-message">깃허브 저장소에서 데이터를 불러오는 중입니다...</td>
                 </tr>
             </tbody>
         </table>
@@ -332,7 +307,6 @@
 <script>
     let globalData = [];     
 
-    // GitHub API를 활용해 저장소의 모든 파일을 자동 스캔하고, 실패 시 최신 날짜까지 포함된 목록으로 자동 대응
     async function loadAllGithubExcelFiles() {
         try {
             const pathSegments = window.location.pathname.split('/').filter(Boolean);
@@ -357,7 +331,6 @@
                 }
             }
 
-            // GitHub API 호출 제한 등에 대비한 확장된 파일 목록 (금요일 파일들 포함)
             if (filesToProcess.length === 0) {
                 filesToProcess = [
                     "생산일일보고_주사침팀 260109.xlsx", "생산일일보고_주사침팀 260116.xlsx",
@@ -375,7 +348,7 @@
                     "생산일일보고_주사침팀 261008.xlsx", "생산일일보고_주사침팀 261016.xlsx",
                     "생산일일보고_주사침팀 261023.xlsx", "생산일일보고_주사침팀 261030.xlsx",
                     "생산일일보고_주사침팀 261106.xlsx", "생산일일보고_주사침팀 261110.xlsx",
-                    "생산일일보고_주사침팀 261111.xlsx"
+                    "생산일일보고_주사침팀 261111.xlsx", "생산일일보고_주사침팀 261116.xlsx"
                 ];
             }
 
@@ -394,12 +367,18 @@
                     const rawData = XLSX.utils.sheet_to_json(worksheet, {header: 1, defval: ""});
                     
                     let currentProdDate = ""; 
-                    let colIdx = { product: -1, process: -1, qty: -1, remark: -1 };
+                    // 파일명 우선 파싱 (예: "261116" -> "2026-11-16")
+                    let fileDateMatch = fileName.match(/(\d{2})(\d{2})(\d{2})/);
+                    if (fileDateMatch) {
+                        currentProdDate = `20${fileDateMatch[1]}-${fileDateMatch[2]}-${fileDateMatch[3]}`;
+                    }
+                    
+                    let colIdx = { product: -1, process: -1, qty: -1, remark: -1, lot: -1 };
 
                     for (let i = 0; i < rawData.length; i++) {
                         let row = rawData[i].map(cell => String(cell).trim());
 
-                        // [수정된 날짜 탐색 로직] '생산일자' 또는 '날짜' 키워드를 유연하게 탐색하여 금요일 파일 대응
+                        // 시트 내부 날짜 재파싱 (파일명보다 시트 내부 명시가 우선)
                         if (row.includes("생산일자") || row.includes("날짜")) {
                             for (let rOffset = 0; rOffset <= 1; rOffset++) {
                                 if (i + rOffset < rawData.length) {
@@ -419,7 +398,8 @@
                                         }
                                     }
                                 }
-                                if (currentProdDate) break;
+                                // 이미 시트에서 날짜 찾았으면 탐색 중단
+                                if (currentProdDate && currentProdDate !== `20${fileDateMatch?.[1]}-${fileDateMatch?.[2]}-${fileDateMatch?.[3]}`) break;
                             }
                         }
 
@@ -428,6 +408,7 @@
                             colIdx.process = row.indexOf("공정");
                             colIdx.qty = row.indexOf("생산수량");
                             colIdx.remark = row.indexOf("비고");
+                            colIdx.lot = row.indexOf("로트"); // 독립된 로트 열 찾기
                             
                             for (let j = i + 1; j < rawData.length; j++) {
                                 let dataRow = rawData[j];
@@ -458,25 +439,46 @@
 
                                 let rawProcessStr = String(dataRow[colIdx.process] || "").trim();
                                 let qty = String(dataRow[colIdx.qty] || "").trim();
-                                let remark = String(dataRow[colIdx.remark] || "").trim();
-
+                                let rawRemark = String(dataRow[colIdx.remark] || "").trim();
+                                
                                 let cleanProcess = rawProcessStr;
                                 let extractedLot = "";
 
-                                let lotMatch = rawProcessStr.match(/\((?:로트\s*[:]?)\s*([^)]+)\)/i);
-                                if (lotMatch) {
-                                    extractedLot = lotMatch[1].trim();
-                                    cleanProcess = rawProcessStr.replace(lotMatch[0], "").trim();
-                                } else {
-                                    let parts = rawProcessStr.split(/로트[:\s]*/);
-                                    if (parts.length > 1) {
-                                        cleanProcess = parts[0].trim();
-                                        extractedLot = parts[1].replace(/[()]/g, "").trim();
+                                // 독립된 열에서 로트 번호 가져오기
+                                if (colIdx.lot >= 0) {
+                                    let cellLot = String(dataRow[colIdx.lot] || "").trim();
+                                    if (cellLot && cellLot !== "-" && cellLot !== "undefined") {
+                                        extractedLot = cellLot;
+                                    }
+                                }
+
+                                // 독립 열에 로트가 없으면 기존처럼 공정명 안에서 파싱
+                                if (!extractedLot) {
+                                    let lotMatch = rawProcessStr.match(/\((?:로트\s*[:]?)\s*([^)]+)\)/i);
+                                    if (lotMatch) {
+                                        extractedLot = lotMatch[1].trim();
+                                        cleanProcess = rawProcessStr.replace(lotMatch[0], "").trim();
+                                    } else {
+                                        let parts = rawProcessStr.split(/로트[:\s]*/);
+                                        if (parts.length > 1) {
+                                            cleanProcess = parts[0].trim();
+                                            extractedLot = parts[1].replace(/[()]/g, "").trim();
+                                        }
                                     }
                                 }
 
                                 let cleanNum = Number(String(qty).replace(/[^0-9.-]+/g,""));
                                 let numericQty = !isNaN(cleanNum) ? cleanNum : 0;
+
+                                // 비고 텍스트에서 '완료' 상태 추출 및 분리 로직
+                                let status = "-";
+                                let finalRemark = rawRemark;
+                                if (rawRemark.includes("생산수량 포함") || rawRemark.includes("완료")) {
+                                    status = "완료";
+                                    finalRemark = rawRemark.replace("생산수량 포함", "").replace("완료", "").trim();
+                                    // 공란이 되거나 구분자만 남으면 깔끔하게 하이픈 처리
+                                    if (!finalRemark || finalRemark === "-" || finalRemark === ",") finalRemark = "-";
+                                }
 
                                 rawCombined.push({
                                     "생산일자": currentProdDate || "-",
@@ -484,7 +486,8 @@
                                     "공정": cleanProcess || rawProcessStr,
                                     "로트": extractedLot || "-",
                                     "생산수량": numericQty,
-                                    "비고": remark
+                                    "비고": finalRemark || "-",
+                                    "상태": status
                                 });
                             }
                         }
@@ -497,7 +500,7 @@
 
             let uniqueMap = new Map();
             rawCombined.forEach(item => {
-                let key = `${item['생산일자']}_${item['제품명']}_${item['공정']}_${item['로트']}_${item['생산수량']}_${item['비고']}`;
+                let key = `${item['생산일자']}_${item['제품명']}_${item['공정']}_${item['로트']}_${item['생산수량']}_${item['비고']}_${item['상태']}`;
                 uniqueMap.set(key, item);
             });
             globalData = Array.from(uniqueMap.values());
@@ -507,7 +510,7 @@
             updateDropdownOptions();
             renderTable(globalData);
 
-            // 직접 입력 검색창(input들)에서 엔터키 누를 시 검색 실행되도록 이벤트 리스너 등록
+            // 직접 입력 검색창(input들)에서 엔터키 누를 시 검색 실행
             const inputFields = document.querySelectorAll('.input-search-section input');
             inputFields.forEach(input => {
                 input.addEventListener('keydown', function(event) {
@@ -543,7 +546,6 @@
         return str;
     }
 
-    // 양력 날짜 객체를 받아 'YYYY-MM-DD' 문자열로 반환하는 헬퍼
     function dateToString(d) {
         let y = d.getFullYear();
         let m = String(d.getMonth() + 1).padStart(2, '0');
@@ -551,16 +553,12 @@
         return `${y}-${m}-${day}`;
     }
 
-    // 연도별 음력 설날 및 추석(음력 8월 15일)의 양력 날짜를 동적으로 계산하는 정밀 알고리즘
     function getLunarHolidayDates(year) {
         const knownLunarDays = {
             2024: { seol: "2024-02-10", chuseok: "2024-09-17" },
             2025: { seol: "2025-01-29", chuseok: "2025-10-06" },
             2026: { seol: "2026-02-17", chuseok: "2026-09-25" },
-            2027: { seol: "2027-02-06", chuseok: "2027-09-15" },
-            2028: { seol: "2028-01-26", chuseok: "2028-10-03" },
-            2029: { seol: "2029-02-13", chuseok: "2029-09-22" },
-            2030: { seol: "2030-02-03", chuseok: "2030-09-12" }
+            2027: { seol: "2027-02-06", chuseok: "2027-09-15" }
         };
 
         let seolDateStr, chuseokDateStr;
@@ -581,7 +579,6 @@
         }
 
         let dates = [];
-
         let sDate = new Date(seolDateStr);
         for (let i = -1; i <= 1; i++) {
             let d = new Date(sDate);
@@ -599,10 +596,8 @@
         return dates;
     }
 
-    // 대한민국 전체 공휴일 집합 생성 함수
     function getKoreanHolidays(year) {
         let holidays = new Set();
-
         const fixedHolidays = [
             `${year}-01-01`, `${year}-03-01`, `${year}-05-01`,
             `${year}-05-05`, `${year}-06-06`, `${year}-08-15`,
@@ -633,7 +628,6 @@
         return holidays;
     }
 
-    // 날짜에 괄호 포함 요일((수)) 추가 및 공휴일/주말 색상 처리를 위한 헬퍼 함수
     function formatDateWithDayAndColor(dateStr) {
         if (!dateStr || dateStr === '-') return { text: '-', color: 'inherit', dayStr: '' };
         
@@ -690,10 +684,8 @@
             });
         };
 
-        // 드롭다운 날짜 목록에 요일이 포함된 형태로 생성
         let rawDates = [...new Set(filterForDropdown('생산일자').map(r => r['생산일자']))].filter(v => v && v !== '-');
         rawDates.sort().reverse();
-
         selDate.innerHTML = `<option value="">전체 일자</option>`;
         rawDates.forEach(dVal => {
             let info = formatDateWithDayAndColor(dVal);
@@ -704,7 +696,7 @@
         let products = [...new Set(filterForDropdown('제품명').map(r => r['제품명']))].filter(v => v);
         let processes = [...new Set(filterForDropdown('공정').map(r => r['공정']))].filter(v => v);
         let lots = [...new Set(filterForDropdown('로트').map(r => r['로트']))].filter(v => v && v !== '-');
-        let remarks = [...new Set(filterForDropdown('비고').map(r => r['비고']))].filter(v => v);
+        let remarks = [...new Set(filterForDropdown('비고').map(r => r['비고']))].filter(v => v && v !== '-');
 
         products.sort();
         processes.sort();
@@ -722,7 +714,7 @@
         updateSelectHtml(selProduct, products, '전체 제품명', curProd);
         updateSelectHtml(selProcess, processes, '전체 공정', curProc);
         updateSelectHtml(selLot, lots, '전체 로트', curLot);
-        updateSelectHtml(selRemark, remarks, '전체 상태', curRem);
+        updateSelectHtml(selRemark, remarks, '전체 비고', curRem);
     }
 
     function filterData() {
@@ -739,25 +731,27 @@
         const iProcess = document.getElementById('inputProcess').value.toLowerCase().trim();
         const iLot = document.getElementById('inputLot').value.toLowerCase().trim();
         const iRemark = document.getElementById('inputRemark').value.toLowerCase().trim();
+        const iStatus = document.getElementById('inputStatus').value.toLowerCase().trim();
 
         const filtered = globalData.filter(row => {
+            // 드롭다운 필터 적용
             if (sDate && row['생산일자'] !== sDate) return false;
             if (sProduct && row['제품명'] !== sProduct) return false;
             if (sProcess && row['공정'] !== sProcess) return false;
             if (sLot && row['로트'] !== sLot) return false;
             if (sRemark && row['비고'] !== sRemark) return false;
 
-            // 직접 입력 날짜 검색 (날짜 문자열뿐만 아니라 요일명(예: 수, 수요일 등)으로도 검색 가능)
+            // 직접 입력 필터 적용
             if (iDate) {
                 let dateInfo = formatDateWithDayAndColor(row['생산일자']);
                 let targetString = (row['생산일자'] + " " + dateInfo.dayStr).toLowerCase();
                 if (!targetString.includes(iDate)) return false;
             }
-
             if (iProduct && !row['제품명'].toLowerCase().includes(iProduct)) return false;
             if (iProcess && !row['공정'].toLowerCase().includes(iProcess)) return false;
             if (iLot && !row['로트'].toLowerCase().includes(iLot)) return false;
             if (iRemark && !row['비고'].toLowerCase().includes(iRemark)) return false;
+            if (iStatus && !row['상태'].toLowerCase().includes(iStatus)) return false;
 
             return true;
         });
@@ -777,6 +771,7 @@
         document.getElementById('inputProcess').value = "";
         document.getElementById('inputLot').value = "";
         document.getElementById('inputRemark').value = "";
+        document.getElementById('inputStatus').value = "";
 
         updateDropdownOptions();
         renderTable(globalData);
@@ -787,10 +782,10 @@
         tbody.innerHTML = '';
 
         let sumQty = 0;
-        let totalCount = data.length; // 검색된 총 건수
+        let totalCount = data.length;
 
         if (totalCount === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="empty-message">조건에 맞는 데이터가 없습니다.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="empty-message">조건에 맞는 데이터가 없습니다.</td></tr>';
             document.getElementById('totalQtySum').textContent = '0건 / 0 EA';
             return;
         }
@@ -802,6 +797,11 @@
             let formattedQty = row['생산수량'].toLocaleString();
             let dateInfo = formatDateWithDayAndColor(row['생산일자']);
 
+            // 완료 상태 배지 처리
+            let statusHtml = row['상태'] === "완료" 
+                ? `<span class="status-badge">${row['상태']}</span>` 
+                : `<span style="color:#7f8c8d;">${row['상태']}</span>`;
+
             let tr = document.createElement('tr');
             tr.innerHTML = `
                 <td class="text-center" style="color: ${dateInfo.color}; font-weight: bold;">${dateInfo.text}</td>
@@ -810,11 +810,11 @@
                 <td><span style="background:#eef2f5; padding:3px 8px; border-radius:4px; font-family:monospace;">${row['로트']}</span></td>
                 <td class="text-right"><strong>${formattedQty}</strong></td>
                 <td>${row['비고']}</td>
+                <td class="text-center">${statusHtml}</td>
             `;
             tbody.appendChild(tr);
         });
 
-        // 총 건수와 수량 총합을 "건수 / 수량 EA" 형태로 표시
         document.getElementById('totalQtySum').textContent = `${totalCount.toLocaleString()}건 / ${sumQty.toLocaleString()} EA`;
     }
 </script>
