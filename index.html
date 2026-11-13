@@ -324,8 +324,8 @@
 
     <!-- 생산수량 합계 표시 바 -->
     <div class="summary-bar">
-        <span>🔍 검색된 조건의 생산수량 총합</span>
-        <span class="summary-value" id="totalQtySum">0 EA</span>
+        <span>🔍 검색된 조건의 생산현황 요약</span>
+        <span class="summary-value" id="totalQtySum">0건 / 0 EA</span>
     </div>
 </div>
 
@@ -774,10 +774,11 @@
         tbody.innerHTML = '';
 
         let sumQty = 0;
+        let totalCount = data.length; // 검색된 총 건수
 
-        if (data.length === 0) {
+        if (totalCount === 0) {
             tbody.innerHTML = '<tr><td colspan="6" class="empty-message">조건에 맞는 데이터가 없습니다.</td></tr>';
-            document.getElementById('totalQtySum').textContent = '0 EA';
+            document.getElementById('totalQtySum').textContent = '0건 / 0 EA';
             return;
         }
 
@@ -800,7 +801,8 @@
             tbody.appendChild(tr);
         });
 
-        document.getElementById('totalQtySum').textContent = sumQty.toLocaleString() + ' EA';
+        // 총 건수와 수량 총합을 "건수 / 수량 EA" 형태로 표시
+        document.getElementById('totalQtySum').textContent = `${totalCount.toLocaleString()}건 / ${sumQty.toLocaleString()} EA`;
     }
 </script>
 </body>
