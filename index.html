@@ -357,22 +357,25 @@
                 }
             }
 
-            // GitHub API 호출 제한 등에 대비한 확장된 파일 목록 (11월 11일 포함)
+            // GitHub API 호출 제한 등에 대비한 확장된 파일 목록 (금요일 파일들 포함)
             if (filesToProcess.length === 0) {
                 filesToProcess = [
-                    "생산일일보고_주사침팀 260605.xlsx", "생산일일보고_주사침팀 260612.xlsx",
-                    "생산일일보고_주사침팀 260619, 20.xlsx", "생산일일보고_주사침팀 260626, 27.xlsx",
-                    "생산일일보고_주사침팀 260703.xlsx", "생산일일보고_주사침팀 260710.xlsx",
-                    "생산일일보고_주사침팀 260716.xlsx", "생산일일보고_주사침팀 260724.xlsx",
-                    "생산일일보고_주사침팀 260731.xlsx", "생산일일보고_주사침팀 260807.xlsx",
-                    "생산일일보고_주사침팀 260814.xlsx", "생산일일보고_주사침팀 260821.xlsx",
-                    "생산일일보고_주사침팀 260828.xlsx", "생산일일보고_주사침팀 260901.xlsx",
-                    "생산일일보고_주사침팀 260904.xlsx", "생산일일보고_주사침팀 260911.xlsx",
-                    "생산일일보고_주사침팀 260918.xlsx", "생산일일보고_주사침팀 260923.xlsx",
-                    "생산일일보고_주사침팀 261002.xlsx", "생산일일보고_주사침팀 261008.xlsx",
-                    "생산일일보고_주사침팀 261016.xlsx", "생산일일보고_주사침팀 261023.xlsx",
-                    "생산일일보고_주사침팀 261030.xlsx", "생산일일보고_주사침팀 261106.xlsx",
-                    "생산일일보고_주사침팀 261110.xlsx", "생산일일보고_주사침팀 261111.xlsx"
+                    "생산일일보고_주사침팀 260109.xlsx", "생산일일보고_주사침팀 260116.xlsx",
+                    "생산일일보고_주사침팀 260123.xlsx", "생산일일보고_주사침팀 260130.xlsx",
+                    "생산일일보고_주사침팀 260206.xlsx", "생산일일보고_주사침팀 260605.xlsx",
+                    "생산일일보고_주사침팀 260612.xlsx", "생산일일보고_주사침팀 260619, 20.xlsx",
+                    "생산일일보고_주사침팀 260626, 27.xlsx", "생산일일보고_주사침팀 260703.xlsx",
+                    "생산일일보고_주사침팀 260710.xlsx", "생산일일보고_주사침팀 260716.xlsx",
+                    "생산일일보고_주사침팀 260724.xlsx", "생산일일보고_주사침팀 260731.xlsx",
+                    "생산일일보고_주사침팀 260807.xlsx", "생산일일보고_주사침팀 260814.xlsx",
+                    "생산일일보고_주사침팀 260821.xlsx", "생산일일보고_주사침팀 260828.xlsx",
+                    "생산일일보고_주사침팀 260901.xlsx", "생산일일보고_주사침팀 260904.xlsx",
+                    "생산일일보고_주사침팀 260911.xlsx", "생산일일보고_주사침팀 260918.xlsx",
+                    "생산일일보고_주사침팀 260923.xlsx", "생산일일보고_주사침팀 261002.xlsx",
+                    "생산일일보고_주사침팀 261008.xlsx", "생산일일보고_주사침팀 261016.xlsx",
+                    "생산일일보고_주사침팀 261023.xlsx", "생산일일보고_주사침팀 261030.xlsx",
+                    "생산일일보고_주사침팀 261106.xlsx", "생산일일보고_주사침팀 261110.xlsx",
+                    "생산일일보고_주사침팀 261111.xlsx"
                 ];
             }
 
@@ -396,17 +399,27 @@
                     for (let i = 0; i < rawData.length; i++) {
                         let row = rawData[i].map(cell => String(cell).trim());
 
-                        if (row.includes("생산일자")) {
-                            let dIdx = row.indexOf("생산일자");
-                            if (i + 1 < rawData.length) {
-                                let rawDateVal = rawData[i+1][dIdx];
-                                if (rawDateVal !== undefined && rawDateVal !== "") {
-                                    if (rawDateVal instanceof Date) {
-                                        currentProdDate = `${rawDateVal.getFullYear()}-${String(rawDateVal.getMonth() + 1).padStart(2, '0')}-${String(rawDateVal.getDate()).padStart(2, '0')}`;
-                                    } else {
-                                        currentProdDate = excelDateToJSDate(rawDateVal);
+                        // [수정된 날짜 탐색 로직] '생산일자' 또는 '날짜' 키워드를 유연하게 탐색하여 금요일 파일 대응
+                        if (row.includes("생산일자") || row.includes("날짜")) {
+                            for (let rOffset = 0; rOffset <= 1; rOffset++) {
+                                if (i + rOffset < rawData.length) {
+                                    let targetRow = rawData[i + rOffset];
+                                    for (let cVal of targetRow) {
+                                        if (cVal !== undefined && cVal !== "") {
+                                            if (cVal instanceof Date) {
+                                                currentProdDate = `${cVal.getFullYear()}-${String(cVal.getMonth() + 1).padStart(2, '0')}-${String(cVal.getDate()).padStart(2, '0')}`;
+                                                break;
+                                            } else {
+                                                let converted = excelDateToJSDate(cVal);
+                                                if (converted && converted.includes("202")) {
+                                                    currentProdDate = converted;
+                                                    break;
+                                                }
+                                            }
+                                        }
                                     }
                                 }
+                                if (currentProdDate) break;
                             }
                         }
 
